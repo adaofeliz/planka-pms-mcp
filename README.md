@@ -36,6 +36,55 @@ Set these environment variables before running:
 | `PLANKA_BASE_URL` | Your Planka instance URL (e.g. `https://planka.example.com`) |
 | `PLANKA_API_KEY` | Your Planka API key |
 
+## Local Development
+
+```bash
+git clone https://github.com/adaofeliz/planka-pms-mcp.git
+cd planka-pms-mcp
+npm install
+npm run build
+```
+
+The server supports two transport modes:
+
+### stdio (default)
+
+Used by MCP clients like Claude Code and Cursor. Test with the inspector:
+
+```bash
+npx @modelcontextprotocol/inspector node dist/index.js
+```
+
+### Streamable HTTP
+
+Starts an HTTP server on `localhost:3000/mcp`. Useful for web-based clients and the inspector's HTTP mode:
+
+```bash
+node dist/index.js --http
+```
+
+Custom port:
+
+```bash
+node dist/index.js --http --port=8080
+```
+
+Test with the inspector over HTTP:
+
+```bash
+npx @modelcontextprotocol/inspector --cli http://localhost:3000/mcp
+```
+
+### Watch mode
+
+For development with auto-rebuild on file changes:
+
+```bash
+npm run dev
+```
+
+Then in a separate terminal, run the inspector pointing to the built output.
+
 ## Documentation
 
 See the [`docs/`](./docs/) folder for full architecture and tool catalog.
