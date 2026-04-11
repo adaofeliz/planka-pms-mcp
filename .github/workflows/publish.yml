@@ -13,6 +13,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - run: rm -f .npmrc
+
       - uses: actions/setup-node@v6
         with:
           node-version: "22"
