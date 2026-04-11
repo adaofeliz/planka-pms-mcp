@@ -1,7 +1,7 @@
 {
   "name": "@adflz/planka-pms-mcp",
   "version": "0.1.0",
-  "description": "MCP server for Planka project management",
+  "description": "GTD-inspired productivity system for AI agents — inbox capture, triage, scheduling, Pomodoro execution, and archival via Planka",
   "type": "module",
   "bin": {
     "planka-pms-mcp": "./dist/index.js"

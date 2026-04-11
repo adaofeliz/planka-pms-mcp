@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { createServer } from "node:http";
+import { createServer, type Server as HttpServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
@@ -26,6 +26,11 @@ function registerTools(server: McpServer) {
       inputSchema: {
         name: z.string().optional().describe("Name to greet"),
       },
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        destructiveHint: false,
+      },
     },
     async ({ name }) => {
       log(`tool/call hello_world ${JSON.stringify({ name })}`);
@@ -46,8 +51,21 @@ function registerTools(server: McpServer) {
 async function startHttpServer() {
   const transports = new Map<string, StreamableHTTPServerTransport>();
 
-  const httpServer = createServer(async (req, res) => {
+  const httpServer: HttpServer = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://localhost:${port}`);
+
+    if (url.pathname === "/health") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          status: "ok",
+          server: SERVER_NAME,
+          version: SERVER_VERSION,
+          activeSessions: transports.size,
+        }),
+      );
+      return;
+    }
 
     if (url.pathname !== "/mcp") {
       res.writeHead(404, { "Content-Type": "application/json" });
@@ -90,7 +108,15 @@ async function startHttpServer() {
     for await (const chunk of req) {
       chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
     }
-    const body = JSON.parse(Buffer.concat(chunks).toString());
+
+    let body: unknown;
+    try {
+      body = JSON.parse(Buffer.concat(chunks).toString());
+    } catch {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Invalid JSON in request body" }));
+      return;
+    }
 
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
@@ -102,7 +128,7 @@ async function startHttpServer() {
 
     const isInit = Array.isArray(body)
       ? body.some((m: { method?: string }) => m.method === "initialize")
-      : body.method === "initialize";
+      : (body as { method?: string }).method === "initialize";
 
     if (!isInit) {
       res.writeHead(400, { "Content-Type": "application/json" });
@@ -135,8 +161,11 @@ async function startHttpServer() {
 
   httpServer.listen(port, () => {
     log(`HTTP server listening on http://localhost:${port}/mcp`);
+    log(`Health check: http://localhost:${port}/health`);
     log(`Connect with: npx @modelcontextprotocol/inspector --cli http://localhost:${port}/mcp`);
   });
+
+  return { httpServer, transports };
 }
 
 async function startStdioServer() {
@@ -150,10 +179,43 @@ async function startStdioServer() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   log("Server connected via stdio");
+
+  return { server, transport };
 }
 
-if (useHttp) {
-  startHttpServer();
-} else {
-  startStdioServer();
+async function main() {
+  if (useHttp) {
+    const { httpServer, transports } = await startHttpServer();
+
+    const shutdown = async () => {
+      log("Shutting down HTTP server...");
+      for (const [id, transport] of transports) {
+        await transport.close();
+        transports.delete(id);
+      }
+      httpServer.close(() => {
+        log("HTTP server closed");
+        process.exit(0);
+      });
+    };
+
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
+  } else {
+    const { server } = await startStdioServer();
+
+    const shutdown = async () => {
+      log("Shutting down stdio server...");
+      await server.close();
+      process.exit(0);
+    };
+
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
+  }
 }
+
+main().catch((err) => {
+  log(`Fatal error: ${err instanceof Error ? err.message : String(err)}`);
+  process.exit(1);
+});

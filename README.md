@@ -1,6 +1,8 @@
 # @adflz/planka-pms-mcp
 
-MCP server for [Planka](https://planka.app) project management. Gives AI models structured, token-efficient access to a Planka task board.
+A GTD-inspired personal productivity system that gives AI agents the ability to manage a full task lifecycle — from inbox capture through triage, scheduling, focused execution with Pomodoro time-tracking, to completion and archival. Built on [Planka](https://planka.app) as the backing Kanban board, exposed via the Model Context Protocol (MCP).
+
+This is not a generic Planka API wrapper. It's a **semantic productivity layer** that encodes workflow rules (valid transitions, WIP limits, due-date-windowed promotion), progressive disclosure (tiered responses that cut ~80% of token waste), and a forgiving system that surfaces overdue tasks with resolution strategies instead of punishing the user.
 
 ## Installation
 
