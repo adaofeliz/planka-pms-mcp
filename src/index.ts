@@ -27,14 +27,19 @@ function registerTools(server: McpServer) {
         name: z.string().optional().describe("Name to greet"),
       },
     },
-    async ({ name }) => ({
-      content: [
-        {
-          type: "text",
-          text: `Hello, ${name ?? "World"}! The Planka PMS MCP server is running.`,
-        },
-      ],
-    }),
+    async ({ name }) => {
+      log(`tool/call hello_world ${JSON.stringify({ name })}`);
+      const result = {
+        content: [
+          {
+            type: "text" as const,
+            text: `Hello, ${name ?? "World"}! The Planka PMS MCP server is running.`,
+          },
+        ],
+      };
+      log(`tool/result hello_world -> ${result.content[0].text}`);
+      return result;
+    },
   );
 }
 
