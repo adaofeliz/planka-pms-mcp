@@ -31,9 +31,9 @@ const ctx = {
   lists: [{ id: "list-backlog", name: "BACKLOG" }],
   labels: [{ id: "label-work", name: "Work", color: "blue", position: 1, boardId: "board-1" }],
   customFields: [
-    { id: "cf-priority", name: "Priority", type: "number", position: 1 },
-    { id: "cf-duration", name: "Duration", type: "number", position: 2 },
-    { id: "cf-scheduled", name: "Scheduled", type: "datetime", position: 3 },
+    { id: "cf-priority", name: "Priority", type: "number", position: 1, customFieldGroupId: "cfg-1" },
+    { id: "cf-duration", name: "Duration", type: "number", position: 2, customFieldGroupId: "cfg-1" },
+    { id: "cf-scheduled", name: "Scheduled", type: "datetime", position: 3, customFieldGroupId: "cfg-1" },
   ],
   customFieldGroups: [{ id: "cfg-1", name: "Main", boardId: "board-1" }],
   priorityFieldName: "Priority",
@@ -45,9 +45,9 @@ const common = {
   cardLabels: [{ id: "cl-1", cardId: "card-1", labelId: "label-work" }],
   cardMemberships: [{ id: "cm-1", cardId: "card-1", userId: "user-2" }],
   customFieldValues: [
-    { id: "cfv-1", value: "1", customFieldGroupId: "cfg-1", customFieldId: "cf-priority", cardId: "card-1" },
-    { id: "cfv-2", value: "30", customFieldGroupId: "cfg-1", customFieldId: "cf-duration", cardId: "card-1" },
-    { id: "cfv-3", value: "2026-04-12T09:00:00.000Z", customFieldGroupId: "cfg-1", customFieldId: "cf-scheduled", cardId: "card-1" },
+    { id: "cfv-1", content: "1", customFieldGroupId: "cfg-1", customFieldId: "cf-priority", cardId: "card-1" },
+    { id: "cfv-2", content: "30", customFieldGroupId: "cfg-1", customFieldId: "cf-duration", cardId: "card-1" },
+    { id: "cfv-3", content: "2026-04-12T09:00:00.000Z", customFieldGroupId: "cfg-1", customFieldId: "cf-scheduled", cardId: "card-1" },
   ],
   taskLists: [{ id: "tl-1", name: "Checklist", position: 1, cardId: "card-1", showOnFrontOfCard: true, hideCompletedTasks: false }],
   tasks: [

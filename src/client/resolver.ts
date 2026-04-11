@@ -83,7 +83,10 @@ export class NameResolver {
   }
 
   resolveCustomFieldId(name: string): string {
-    return this.resolveEntity("custom field", name, this.skeleton.customFields).id;
+    const fields = this.skeleton.customFields.filter(
+      (f): f is typeof f & { name: string } => f.name !== null,
+    );
+    return this.resolveEntity("custom field", name, fields).id;
   }
 
   resolveInboxListId(): string {

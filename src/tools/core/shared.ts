@@ -109,7 +109,7 @@ export function getCustomFieldValue(
   const field = customFields.find((f) => f.name === fieldName);
   if (!field) return null;
   const value = customFieldValues.find((v) => v.cardId === cardId && v.customFieldId === field.id);
-  return value?.value ?? null;
+  return value?.content ?? null;
 }
 
 export function getTaskProgress(

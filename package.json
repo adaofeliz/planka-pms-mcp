@@ -1,6 +1,6 @@
 {
   "name": "@adflz/planka-pms-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "GTD-inspired productivity system for AI agents — inbox capture, triage, scheduling, Pomodoro execution, and archival via Planka",
   "type": "module",
   "bin": {

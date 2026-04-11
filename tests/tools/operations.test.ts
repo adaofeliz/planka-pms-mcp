@@ -68,8 +68,8 @@ function skeleton(): BoardSkeleton {
     cardLabels: [],
     customFieldGroups: [{ id: "cfg-1", name: "Main", boardId: "board-1" }],
     customFields: [
-      { id: "cf-priority", name: "Priority", type: "number", position: 1 },
-      { id: "cf-duration", name: "Duration", type: "number", position: 2 },
+      { id: "cf-priority", name: "Priority", type: "number", position: 1, customFieldGroupId: "cfg-1" },
+      { id: "cf-duration", name: "Duration", type: "number", position: 2, customFieldGroupId: "cfg-1" },
     ],
     members: [],
     cards: [],

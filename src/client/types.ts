@@ -53,9 +53,10 @@ export interface PlankaUser {
 
 export interface PlankaCustomField {
   id: string;
-  name: string;
+  name: string | null;
   type: string;
   position: number;
+  customFieldGroupId: string;
 }
 
 export interface PlankaCustomFieldGroup {
@@ -66,7 +67,7 @@ export interface PlankaCustomFieldGroup {
 
 export interface PlankaCustomFieldValue {
   id: string;
-  value: string;
+  content: string;
   customFieldGroupId: string;
   customFieldId: string;
   cardId: string;

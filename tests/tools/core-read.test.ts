@@ -71,7 +71,7 @@ function skeleton(): BoardSkeleton {
     labels: [{ id: "lab-work", name: "Work", color: "blue", position: 1, boardId: "board-1" }],
     cardLabels: [],
     customFieldGroups: [],
-    customFields: [{ id: "cf-priority", name: "Priority", type: "number", position: 1 }],
+    customFields: [{ id: "cf-priority", name: "Priority", type: "number", position: 1, customFieldGroupId: "cfg-1" }],
     members: [],
     cards: [
       {
@@ -201,7 +201,7 @@ function makeContext(overrides?: Partial<ToolContext>): ToolContext {
         tasks: [],
         customFieldGroups: [],
         customFields: [],
-        customFieldValues: [{ id: "cfv-1", value: "2", customFieldGroupId: "cfg", customFieldId: "cf-priority", cardId: "c-1" }],
+        customFieldValues: [{ id: "cfv-1", content: "2", customFieldGroupId: "cfg", customFieldId: "cf-priority", cardId: "c-1" }],
         users: [],
       },
     }),
@@ -358,7 +358,7 @@ describe("core read tools", () => {
                 tasks: [],
                 customFieldGroups: [],
                 customFields: [],
-                customFieldValues: [{ id: "cfv-x1", value: "2", customFieldGroupId: "cfg", customFieldId: "cf-priority", cardId: "x-1" }],
+                customFieldValues: [{ id: "cfv-x1", content: "2", customFieldGroupId: "cfg", customFieldId: "cf-priority", cardId: "x-1" }],
                 users: [],
               },
             };
@@ -396,7 +396,7 @@ describe("core read tools", () => {
                 tasks: [],
                 customFieldGroups: [],
                 customFields: [],
-                customFieldValues: [{ id: "cfv-x1-dup", value: "2", customFieldGroupId: "cfg", customFieldId: "cf-priority", cardId: "x-1" }],
+                customFieldValues: [{ id: "cfv-x1-dup", content: "2", customFieldGroupId: "cfg", customFieldId: "cf-priority", cardId: "x-1" }],
                 users: [],
               },
             };

@@ -65,8 +65,8 @@ function skeleton(): BoardSkeleton {
     cardLabels: [],
     customFieldGroups: [{ id: "cfg", name: "Main", boardId: "board-1" }],
     customFields: [
-      { id: "cf-priority", name: "Priority", type: "number", position: 1 },
-      { id: "cf-duration", name: "Duration", type: "number", position: 2 },
+      { id: "cf-priority", name: "Priority", type: "number", position: 1, customFieldGroupId: "cfg-1" },
+      { id: "cf-duration", name: "Duration", type: "number", position: 2, customFieldGroupId: "cfg-1" },
     ],
     members: [],
     cards: [
@@ -181,8 +181,8 @@ function makeContext(): ToolContext {
         customFieldGroups: [],
         customFields: [],
         customFieldValues: [
-          { id: `p-${cardId}`, value: "5", customFieldGroupId: "cfg", customFieldId: "cf-priority", cardId },
-          { id: `d-${cardId}`, value: "120", customFieldGroupId: "cfg", customFieldId: "cf-duration", cardId },
+          { id: `p-${cardId}`, content: "5", customFieldGroupId: "cfg", customFieldId: "cf-priority", cardId },
+          { id: `d-${cardId}`, content: "120", customFieldGroupId: "cfg", customFieldId: "cf-duration", cardId },
         ],
       },
     })),

@@ -63,7 +63,7 @@ function getCustomFieldValue(
   const field = customFields.find((f) => f.name === fieldName);
   if (!field) return null;
   const val = customFieldValues.find((v) => v.cardId === cardId && v.customFieldId === field.id);
-  return val?.value ?? null;
+  return val?.content ?? null;
 }
 
 function getTaskProgress(
@@ -143,7 +143,7 @@ export function shapeCard(opts: ShapeCardOptions): CardTier1 | CardTier2 | CardT
   const allCustomFields: Record<string, string> = {};
   for (const cfv of opts.customFieldValues.filter((v) => v.cardId === card.id)) {
     const field = ctx.customFields.find((f) => f.id === cfv.customFieldId);
-    if (field) allCustomFields[field.name] = cfv.value;
+    if (field && field.name) allCustomFields[field.name] = cfv.content;
   }
 
   const scheduledRaw = getCustomFieldValue(card.id, "Scheduled", opts.customFieldValues, ctx.customFields);

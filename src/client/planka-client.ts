@@ -243,7 +243,7 @@ export class PlankaClient {
 
   async setCustomFieldValue(cardId: string, groupId: string, fieldId: string, value: string): Promise<void> {
     const path = `/api/cards/${cardId}/custom-field-values/customFieldGroupId:${groupId}:customFieldId:${fieldId}`;
-    await this.request<unknown>("PATCH", path, { body: { value } });
+    await this.request<unknown>("PATCH", path, { body: { content: value } });
   }
 
   async clearCustomFieldValue(cardId: string, groupId: string, fieldId: string): Promise<void> {

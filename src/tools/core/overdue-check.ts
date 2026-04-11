@@ -63,10 +63,10 @@ export const overdueCheckTool = {
       const values = details.included.customFieldValues ?? [];
 
       const priority = priorityField
-        ? parseNumeric(values.find((value) => value.customFieldId === priorityField.id)?.value)
+        ? parseNumeric(values.find((v) => v.customFieldId === priorityField.id)?.content)
         : null;
       const duration = durationField
-        ? parseNumeric(values.find((value) => value.customFieldId === durationField.id)?.value)
+        ? parseNumeric(values.find((v) => v.customFieldId === durationField.id)?.content)
         : null;
 
       enriched.push({

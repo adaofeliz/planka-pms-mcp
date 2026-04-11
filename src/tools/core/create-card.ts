@@ -5,16 +5,6 @@ import { toolResult, toolError } from "./shared.js";
 import { normalizeBoardSkeleton } from "../../client/cache.js";
 import { shapeCard } from "../../shaper/response-shaper.js";
 
-function getFieldGroupId(ctx: ToolContext): string | null {
-  const boardId = ctx.config.connection.board_id;
-  const skeleton = ctx.cache.get(boardId);
-  if (!skeleton || skeleton.customFieldGroups.length === 0) {
-    return null;
-  }
-
-  return skeleton.customFieldGroups[0].id;
-}
-
 export const createCardTool = {
   name: "create_card" as const,
   description: "Capture a new task to INBOX or a specified list. Card type is always 'project'.",
@@ -65,19 +55,17 @@ export const createCardTool = {
         }
       }
 
-      const fieldGroupId = getFieldGroupId(ctx);
-
-      if (input.priority !== undefined && fieldGroupId) {
+      if (input.priority !== undefined) {
         const priorityField = skeleton.customFields.find((f) => f.name === ctx.config.custom_fields.priority.field_name);
         if (priorityField) {
-          await ctx.client.setCustomFieldValue(card.id, fieldGroupId, priorityField.id, String(input.priority));
+          await ctx.client.setCustomFieldValue(card.id, priorityField.customFieldGroupId, priorityField.id, String(input.priority));
         }
       }
 
-      if (input.duration_min !== undefined && fieldGroupId) {
+      if (input.duration_min !== undefined) {
         const durationField = skeleton.customFields.find((f) => f.name === ctx.config.custom_fields.duration.field_name);
         if (durationField) {
-          await ctx.client.setCustomFieldValue(card.id, fieldGroupId, durationField.id, String(input.duration_min));
+          await ctx.client.setCustomFieldValue(card.id, durationField.customFieldGroupId, durationField.id, String(input.duration_min));
         }
       }
 

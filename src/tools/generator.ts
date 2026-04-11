@@ -186,7 +186,6 @@ export function registerWorkflowTools(
           const skeleton = ctx.cache.get(boardId) ?? normalizeBoardSkeleton(await ctx.client.getBoard(boardId));
           ctx.cache.set(boardId, skeleton);
 
-          const fieldGroupId = skeleton.customFieldGroups[0]?.id;
           const priorityField = skeleton.customFields.find(
             (field) => field.name === ctx.config.custom_fields.priority.field_name,
           );
@@ -194,12 +193,12 @@ export function registerWorkflowTools(
             (field) => field.name === ctx.config.custom_fields.duration.field_name,
           );
 
-          if (!fieldGroupId || !priorityField || !durationField) {
+          if (!priorityField || !durationField) {
             throw new ValidationError("Required custom field metadata is not available on this board");
           }
 
-          await ctx.client.setCustomFieldValue(cardId, fieldGroupId, priorityField.id, String(parsed.priority));
-          await ctx.client.setCustomFieldValue(cardId, fieldGroupId, durationField.id, String(parsed.duration_min));
+          await ctx.client.setCustomFieldValue(cardId, priorityField.customFieldGroupId, priorityField.id, String(parsed.priority));
+          await ctx.client.setCustomFieldValue(cardId, durationField.customFieldGroupId, durationField.id, String(parsed.duration_min));
           await ctx.client.updateCard(cardId, { dueDate: String(parsed.due_date) });
 
           return toolResult({ status: "triaged", card_id: cardId });

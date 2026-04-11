@@ -5,16 +5,6 @@ import { toolResult, toolError } from "./shared.js";
 import { normalizeBoardSkeleton } from "../../client/cache.js";
 import { shapeCard } from "../../shaper/response-shaper.js";
 
-function getFieldGroupId(ctx: ToolContext): string | null {
-  const boardId = ctx.config.connection.board_id;
-  const skeleton = ctx.cache.get(boardId);
-  if (!skeleton || skeleton.customFieldGroups.length === 0) {
-    return null;
-  }
-
-  return skeleton.customFieldGroups[0].id;
-}
-
 export const updateCardTool = {
   name: "update_card" as const,
   description: "Update card properties including name, description, due date, priority, duration, and labels.",
@@ -73,22 +63,21 @@ export const updateCardTool = {
         }
       }
 
-      const fieldGroupId = getFieldGroupId(ctx);
       const priorityField = skeleton.customFields.find((f) => f.name === ctx.config.custom_fields.priority.field_name);
-      if (priorityField && fieldGroupId) {
+      if (priorityField) {
         if (input.priority === null) {
-          await ctx.client.clearCustomFieldValue(input.card_id, fieldGroupId, priorityField.id);
+          await ctx.client.clearCustomFieldValue(input.card_id, priorityField.customFieldGroupId, priorityField.id);
         } else if (input.priority !== undefined) {
-          await ctx.client.setCustomFieldValue(input.card_id, fieldGroupId, priorityField.id, String(input.priority));
+          await ctx.client.setCustomFieldValue(input.card_id, priorityField.customFieldGroupId, priorityField.id, String(input.priority));
         }
       }
 
       const durationField = skeleton.customFields.find((f) => f.name === ctx.config.custom_fields.duration.field_name);
-      if (durationField && fieldGroupId) {
+      if (durationField) {
         if (input.duration_min === null) {
-          await ctx.client.clearCustomFieldValue(input.card_id, fieldGroupId, durationField.id);
+          await ctx.client.clearCustomFieldValue(input.card_id, durationField.customFieldGroupId, durationField.id);
         } else if (input.duration_min !== undefined) {
-          await ctx.client.setCustomFieldValue(input.card_id, fieldGroupId, durationField.id, String(input.duration_min));
+          await ctx.client.setCustomFieldValue(input.card_id, durationField.customFieldGroupId, durationField.id, String(input.duration_min));
         }
       }
 
