@@ -204,3 +204,91 @@ export interface GetCardsByListOptions {
   userIds?: string[];
   labelIds?: string[];
 }
+
+export interface CreateTaskListInput {
+  name: string;
+  position: number;
+}
+
+export interface UpdateTaskListInput {
+  name?: string;
+  position?: number;
+}
+
+export interface TaskListResponse {
+  item: PlankaTaskList;
+  included: { tasks: PlankaTask[] };
+}
+
+export interface CreateTaskInput {
+  name: string;
+  position: number;
+  isCompleted?: boolean;
+}
+
+export interface UpdateTaskInput {
+  name?: string;
+  position?: number;
+  isCompleted?: boolean;
+  taskListId?: string;
+}
+
+export interface TaskResponse {
+  item: PlankaTask;
+}
+
+export interface CreateCardInput {
+  type: "project";
+  name: string;
+  position?: number;
+  description?: string | null;
+  dueDate?: string | null;
+  isDueCompleted?: boolean;
+  stopwatch?: StopwatchData;
+}
+
+export interface UpdateCardInput {
+  name?: string;
+  description?: string | null;
+  dueDate?: string | null;
+  isDueCompleted?: boolean;
+  stopwatch?: StopwatchData;
+  listId?: string;
+  position?: number;
+}
+
+export interface CreateCommentInput {
+  text: string;
+}
+
+export interface CommentResponse {
+  item: PlankaComment;
+  included: { users: PlankaUser[] };
+}
+
+export interface SortListInput {
+  fieldName: "name" | "dueDate" | "createdAt";
+  order: "asc" | "desc";
+}
+
+export interface ListWithCardsResponse {
+  items: PlankaCard[];
+  included: {
+    cardLabels: PlankaCardLabel[];
+    cardMemberships: PlankaCardMembership[];
+    taskLists: PlankaTaskList[];
+    tasks: PlankaTask[];
+    customFieldGroups: PlankaCustomFieldGroup[];
+    customFields: PlankaCustomField[];
+    customFieldValues: PlankaCustomFieldValue[];
+    users: PlankaUser[];
+  };
+}
+
+export interface StopwatchStatus {
+  total: number;
+  startedAt: string | null;
+  running: boolean;
+  elapsed: number;
+  totalWithElapsed: number;
+}

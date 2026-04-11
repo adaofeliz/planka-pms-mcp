@@ -182,4 +182,199 @@ describe("PlankaClient", () => {
     const [calledUrl] = (mockFetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(calledUrl).toContain("/api/cards/card1/actions");
   });
+
+  describe("write methods", () => {
+    it("createCard calls POST /api/lists/{listId}/cards with project type", async () => {
+      const mockFetch = makeFetchMock(200, { item: {}, included: {} });
+      const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: mockFetch });
+
+      await client.createCard("list1", { type: "project", name: "Card Name" });
+
+      const [calledUrl, calledInit] = (mockFetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(calledUrl).toContain("/api/lists/list1/cards");
+      expect((calledInit as RequestInit).method).toBe("POST");
+      expect(JSON.parse(((calledInit as RequestInit).body as string))).toMatchObject({
+        type: "project",
+        name: "Card Name",
+      });
+    });
+
+    it("updateCard calls PATCH /api/cards/{cardId} with provided fields", async () => {
+      const mockFetch = makeFetchMock(200, { item: {}, included: {} });
+      const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: mockFetch });
+
+      await client.updateCard("card1", { name: "Updated", description: "Desc", isDueCompleted: true });
+
+      const [calledUrl, calledInit] = (mockFetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(calledUrl).toContain("/api/cards/card1");
+      expect((calledInit as RequestInit).method).toBe("PATCH");
+      expect(JSON.parse(((calledInit as RequestInit).body as string))).toEqual({
+        name: "Updated",
+        description: "Desc",
+        isDueCompleted: true,
+      });
+    });
+
+    it("moveCard calls PATCH /api/cards/{cardId} with listId and optional position", async () => {
+      const mockFetch = makeFetchMock(200, { item: {}, included: {} });
+      const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: mockFetch });
+
+      await client.moveCard("card1", "list2");
+      await client.moveCard("card1", "list3", 42);
+
+      const firstCall = (mockFetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      const secondCall = (mockFetch as ReturnType<typeof vi.fn>).mock.calls[1];
+
+      expect(firstCall[0]).toContain("/api/cards/card1");
+      expect((firstCall[1] as RequestInit).method).toBe("PATCH");
+      expect(JSON.parse(((firstCall[1] as RequestInit).body as string))).toEqual({ listId: "list2" });
+
+      expect(JSON.parse(((secondCall[1] as RequestInit).body as string))).toEqual({
+        listId: "list3",
+        position: 42,
+      });
+    });
+
+    it("addCardLabel calls POST /api/cards/{cardId}/card-labels with labelId", async () => {
+      const mockFetch = makeFetchMock(200, {});
+      const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: mockFetch });
+
+      await client.addCardLabel("card1", "label1");
+
+      const [calledUrl, calledInit] = (mockFetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(calledUrl).toContain("/api/cards/card1/card-labels");
+      expect((calledInit as RequestInit).method).toBe("POST");
+      expect(JSON.parse(((calledInit as RequestInit).body as string))).toEqual({ labelId: "label1" });
+    });
+
+    it("createComment calls POST /api/cards/{cardId}/comments with text", async () => {
+      const mockFetch = makeFetchMock(200, { item: {}, included: { users: [] } });
+      const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: mockFetch });
+
+      await client.createComment("card1", "hello");
+
+      const [calledUrl, calledInit] = (mockFetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(calledUrl).toContain("/api/cards/card1/comments");
+      expect((calledInit as RequestInit).method).toBe("POST");
+      expect(JSON.parse(((calledInit as RequestInit).body as string))).toEqual({ text: "hello" });
+    });
+
+    it("setCustomFieldValue uses single-colon custom field route format", async () => {
+      const mockFetch = makeFetchMock(200, {});
+      const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: mockFetch });
+
+      await client.setCustomFieldValue("card1", "grp1", "fld1", "5");
+
+      const [calledUrl, calledInit] = (mockFetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(calledUrl).toContain("/custom-field-values/customFieldGroupId:grp1:customFieldId:fld1");
+      expect((calledInit as RequestInit).method).toBe("PATCH");
+    });
+
+    it("clearCustomFieldValue calls DELETE on correct single-colon URL", async () => {
+      const mockFetch = makeFetchMock(200, {});
+      const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: mockFetch });
+
+      await client.clearCustomFieldValue("card1", "grp1", "fld1");
+
+      const [calledUrl, calledInit] = (mockFetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(calledUrl).toContain("customFieldGroupId:grp1:customFieldId:fld1");
+      expect((calledInit as RequestInit).method).toBe("DELETE");
+    });
+
+    it("sortList calls POST /api/lists/{listId}/sort with field and order", async () => {
+      const mockFetch = makeFetchMock(200, { items: [], included: {} });
+      const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: mockFetch });
+
+      await client.sortList("list1", "dueDate", "asc");
+
+      const [calledUrl, calledInit] = (mockFetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(calledUrl).toContain("/api/lists/list1/sort");
+      expect((calledInit as RequestInit).method).toBe("POST");
+      expect(JSON.parse(((calledInit as RequestInit).body as string))).toEqual({
+        fieldName: "dueDate",
+        order: "asc",
+      });
+    });
+
+    it("startStopwatch sets startedAt and preserves total", async () => {
+      const capturedBodies: unknown[] = [];
+      const mockFetch = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+        if (init?.body) capturedBodies.push(JSON.parse(init.body as string));
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ item: {}, included: {} }),
+        } as Response);
+      });
+      const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: mockFetch });
+
+      await client.startStopwatch("card1", 300);
+
+      const body = capturedBodies[0] as { stopwatch: { total: number; startedAt: string } };
+      expect(body.stopwatch.total).toBe(300);
+      expect(typeof body.stopwatch.startedAt).toBe("string");
+      expect(body.stopwatch.startedAt.startsWith("202")).toBe(true);
+    });
+
+    it("stopStopwatch computes elapsed correctly", async () => {
+      const capturedBodies: unknown[] = [];
+      const mockFetch = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+        if (init?.body) capturedBodies.push(JSON.parse(init.body as string));
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ item: {}, included: {} }),
+        } as Response);
+      });
+      const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: mockFetch });
+
+      const startedAt = new Date(Date.now() - 60_000).toISOString();
+      await client.stopStopwatch("card1", 100, startedAt);
+
+      const body = capturedBodies[0] as { stopwatch: { total: number } };
+      expect(body.stopwatch.total).toBeGreaterThanOrEqual(159);
+      expect(body.stopwatch.total).toBeLessThanOrEqual(162);
+    });
+
+    it("resetStopwatch sets total 0 and startedAt null", async () => {
+      const capturedBodies: unknown[] = [];
+      const mockFetch = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+        if (init?.body) capturedBodies.push(JSON.parse(init.body as string));
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ item: {}, included: {} }),
+        } as Response);
+      });
+      const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: mockFetch });
+
+      await client.resetStopwatch("card1");
+
+      const body = capturedBodies[0] as { stopwatch: { total: number; startedAt: string | null } };
+      expect(body.stopwatch).toEqual({ total: 0, startedAt: null });
+    });
+
+    it("getStopwatchStatus returns running stopwatch details", () => {
+      const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: makeFetchMock(200, {}) });
+
+      const status = client.getStopwatchStatus({
+        total: 0,
+        startedAt: new Date(Date.now() - 5_000).toISOString(),
+      });
+
+      expect(status.running).toBe(true);
+      expect(status.elapsed).toBeGreaterThanOrEqual(4);
+      expect(status.totalWithElapsed).toBeGreaterThanOrEqual(4);
+    });
+
+    it("getStopwatchStatus returns stopped stopwatch details", () => {
+      const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: makeFetchMock(200, {}) });
+
+      const status = client.getStopwatchStatus({ total: 500, startedAt: null });
+
+      expect(status.running).toBe(false);
+      expect(status.elapsed).toBe(0);
+      expect(status.totalWithElapsed).toBe(500);
+    });
+  });
 });
