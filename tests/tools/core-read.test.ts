@@ -460,11 +460,14 @@ describe("core read tools", () => {
         promotion_suggestions: { imminent: unknown[]; approaching: unknown[] };
       };
       wip: { warnings: Array<{ list: string }> };
+      forgiving: { warnings: string[]; suggestions: unknown[] };
     };
 
     expect(payload.scheduling.by_due_window.overdue).toBe(1);
     expect(payload.scheduling.promotion_suggestions.imminent.length).toBeGreaterThanOrEqual(0);
     expect(payload.scheduling.promotion_suggestions.approaching.length).toBeGreaterThanOrEqual(0);
     expect(Array.isArray(payload.wip.warnings)).toBe(true);
+    expect(Array.isArray(payload.forgiving.warnings)).toBe(true);
+    expect(Array.isArray(payload.forgiving.suggestions)).toBe(true);
   });
 });
