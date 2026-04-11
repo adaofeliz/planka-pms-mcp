@@ -1,9 +1,13 @@
 import type { PlankaConfig } from "../../config/types.js";
-import type { PlankaClient } from "../../client/planka-client.js";
 import type { BoardSkeletonCache } from "../../client/cache.js";
 import type { NameResolver } from "../../client/resolver.js";
 import type { Logger } from "../../utils/logger.js";
 import type {
+  ActionsResponse,
+  BoardResponse,
+  CardResponse,
+  CardsResponse,
+  CommentsResponse,
   PlankaCard,
   PlankaLabel,
   PlankaCustomFieldValue,
@@ -15,7 +19,26 @@ import type {
 
 export interface ToolContext {
   config: PlankaConfig;
-  client: PlankaClient;
+  client: {
+    getBoard: (boardId: string) => Promise<BoardResponse>;
+    getBoardSkeleton: (boardId: string, forceRefresh?: boolean) => Promise<import("../../client/cache.js").BoardSkeleton>;
+    getCardsByList: (listId: string, options?: { search?: string }) => Promise<CardsResponse>;
+    getCard: (cardId: string) => Promise<CardResponse>;
+    getComments: (cardId: string) => Promise<CommentsResponse>;
+    getCardActions: (cardId: string) => Promise<ActionsResponse>;
+    createCard: (listId: string, data: import("../../client/types.js").CreateCardInput) => Promise<CardResponse>;
+    updateCard: (cardId: string, data: import("../../client/types.js").UpdateCardInput) => Promise<CardResponse>;
+    addCardLabel: (cardId: string, labelId: string) => Promise<void>;
+    removeCardLabel: (cardId: string, labelId: string) => Promise<void>;
+    setCustomFieldValue: (cardId: string, groupId: string, fieldId: string, value: string) => Promise<void>;
+    clearCustomFieldValue: (cardId: string, groupId: string, fieldId: string) => Promise<void>;
+    moveCard: (cardId: string, targetListId: string, position?: number) => Promise<CardResponse>;
+    sortList: (
+      listId: string,
+      fieldName: "name" | "dueDate" | "createdAt",
+      order: "asc" | "desc",
+    ) => Promise<unknown>;
+  };
   cache: BoardSkeletonCache;
   resolver: NameResolver;
   boardId?: string;
@@ -33,7 +56,7 @@ export interface CardSummary {
   name: string;
   position: number;
   list: string;
-  due: string | null;
+  due_date: string | null;
   overdue: boolean;
   priority: number | null;
   duration_min: number | null;
@@ -92,7 +115,7 @@ export function normalizeCardSummary(
   tasksProgress: { completed: number; total: number } | null,
 ): CardSummary {
   const now = new Date();
-  const due = card.dueDate ? card.dueDate.split("T")[0] : null;
+  const due_date = card.dueDate;
   const overdue = Boolean(card.dueDate && !card.isDueCompleted && new Date(card.dueDate) < now);
 
   return {
@@ -100,7 +123,7 @@ export function normalizeCardSummary(
     name: card.name,
     position: card.position,
     list: listName,
-    due,
+    due_date,
     overdue,
     priority,
     duration_min,
@@ -109,6 +132,35 @@ export function normalizeCardSummary(
     tasks_progress: tasksProgress,
     stopwatch_running: card.stopwatch.startedAt !== null,
   };
+}
+
+export function shapeCardForTier(
+  card: Record<string, unknown>,
+  tiers: PlankaConfig["response"],
+  level: "summary" | "detail" | "deep",
+): Record<string, unknown> {
+  const fields = [
+    ...tiers.tier1,
+    ...(level === "summary" ? [] : tiers.tier2_additions),
+    ...(level === "deep" ? tiers.tier3_additions : []),
+  ];
+
+  const shaped: Record<string, unknown> = {};
+  for (const field of fields) {
+    if (field in card) {
+      shaped[field] = card[field];
+    }
+  }
+
+  return shaped;
+}
+
+export function shapeCardsForTier(
+  cards: Record<string, unknown>[],
+  tiers: PlankaConfig["response"],
+  level: "summary" | "detail" | "deep",
+): Array<Record<string, unknown>> {
+  return cards.map((card) => shapeCardForTier(card, tiers, level));
 }
 
 export function toolResult(data: unknown): { content: Array<{ type: "text"; text: string }> } {
@@ -133,6 +185,9 @@ export function isOverdue(dueDate: string | null | undefined, isDueCompleted: bo
 
   return due.getTime() < now.getTime();
 }
+
+export { shapeCard, type CardTier1, type CardTier2, type CardTier3 } from "../../shaper/response-shaper.js";
+export { formatSeconds, formatDate, isOverdue as isOverdueFmt } from "../../shaper/formatters.js";
 
 export function toolError(
   message: string,
