@@ -5,8 +5,31 @@ import { createServer, type Server as HttpServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
+import { loadConfig } from "./config/loader.js";
+import { createLogger } from "./utils/logger.js";
+import { PlankaClient } from "./client/planka-client.js";
+import { BoardSkeletonCache, normalizeBoardSkeleton } from "./client/cache.js";
+import { NameResolver } from "./client/resolver.js";
+import { boardOverviewTool, boardOverviewHandler } from "./tools/core/board-overview.js";
+import type { ToolContext } from "./tools/core/shared.js";
+
 const SERVER_NAME = "planka-pms";
 const SERVER_VERSION = "0.1.0";
+
+const configPath = (() => {
+  const flag = process.argv.find((a) => a.startsWith("--config="));
+  if (flag) return flag.split("=")[1];
+  return process.env.PLANKA_CONFIG_PATH ?? "config/default.yaml";
+})();
+
+const config = loadConfig(configPath);
+const logger = createLogger(SERVER_NAME);
+const client = new PlankaClient({
+  baseUrl: config.connection.base_url,
+  apiKey: config.connection.api_key,
+  logger,
+});
+const cache = new BoardSkeletonCache(config.cache.skeleton_ttl_seconds * 1000);
 
 const args = process.argv.slice(2);
 const useHttp = args.includes("--http");
@@ -46,6 +69,27 @@ function registerTools(server: McpServer) {
       return result;
     },
   );
+
+  server.registerTool(
+    boardOverviewTool.name,
+    {
+      description: boardOverviewTool.description,
+      inputSchema: boardOverviewTool.inputSchema,
+      annotations: boardOverviewTool.annotations,
+    },
+    async (params) => {
+      const cachedSkeleton = cache.get(config.connection.board_id);
+      const skeleton = cachedSkeleton ?? normalizeBoardSkeleton(await client.getBoard(config.connection.board_id));
+      if (!cachedSkeleton) {
+        cache.set(config.connection.board_id, skeleton);
+      }
+      const resolver = new NameResolver(skeleton, config);
+
+      const ctx: ToolContext = { config, client, cache, resolver, logger };
+      return boardOverviewHandler(params as { board_id?: string }, ctx);
+    },
+  );
+
 }
 
 async function startHttpServer() {
