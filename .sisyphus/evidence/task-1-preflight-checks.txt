@@ -1,0 +1,26 @@
+[gh auth status]
+github.com
+  ✓ Logged in to github.com account adaofeliz (/Users/hub/.config/gh/hosts.yml)
+  - Active account: true
+  - Git operations protocol: ssh
+  - Token: gho_************************************
+  - Token scopes: 'admin:public_key', 'gist', 'read:org', 'repo'
+
+[npm whoami]
+npm error code ENEEDAUTH
+npm error need auth This command requires you to be logged in.
+npm error need auth You need to authorize this machine using `npm adduser`
+npm error A complete log of this run can be found in: /Users/hub/.npm/_logs/2026-04-11T05_50_20_745Z-debug-0.log
+
+[gh repo view adaofeliz/planka-pms-mcp 2>&1]
+GraphQL: Could not resolve to a Repository with the name 'adaofeliz/planka-pms-mcp'. (repository)
+
+[npm view @adflz/planka-pms-mcp 2>&1]
+npm error code E404
+npm error 404 Not Found - GET https://registry.npmjs.org/@adflz%2fplanka-pms-mcp - Not found
+npm error 404
+npm error 404  '@adflz/planka-pms-mcp@*' is not in this registry.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /Users/hub/.npm/_logs/2026-04-11T05_50_20_745Z-debug-0.log
