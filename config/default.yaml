@@ -1,0 +1,191 @@
+connection:
+  base_url: "${PLANKA_BASE_URL}"
+  api_key: "${PLANKA_API_KEY}"
+  board_id: "${PLANKA_BOARD_ID}"
+
+board:
+  card_type: "project"
+
+  lists:
+    inbox: "INBOX"
+    backlog: "BACKLOG"
+    noise: "NOISE"
+    focus: "FOCUS"
+    today: "TODAY"
+    active: "ACTIVE"
+    blocked: "BLOCKED"
+    calendar: "CALENDAR"
+    done: "DONE"
+
+  wip_limits:
+    noise: 5
+    focus: 3
+
+  transitions:
+    inbox: [backlog, noise, focus, today, active, done]
+    backlog: [noise, focus, today, active, blocked, done]
+    noise: [backlog, focus, today, active, blocked, done]
+    focus: [today, active, backlog, noise, blocked, done]
+    today: [active, focus, backlog, blocked, done]
+    active: [done, today, focus, backlog, blocked]
+    blocked: [backlog, noise, focus, today, active]
+    calendar: [done, today, active]
+    done: []
+
+  default_capture_list: inbox
+
+  sort_rules:
+    inbox:
+      field: createdAt
+      order: asc
+    backlog:
+      field: dueDate
+      order: asc
+    noise:
+      field: dueDate
+      order: asc
+    focus:
+      field: dueDate
+      order: asc
+    today:
+      field: dueDate
+      order: asc
+    active:
+      field: dueDate
+      order: asc
+    blocked:
+      field: dueDate
+      order: asc
+    calendar:
+      field: dueDate
+      order: asc
+    done:
+      field: createdAt
+      order: desc
+
+  archive:
+    never_delete_done: true
+    search_enabled: true
+    page_size: 50
+
+  due_date_windows:
+    approaching:
+      min_hours: 24
+      max_hours: 72
+    imminent:
+      max_hours: 24
+
+labels:
+  categories:
+    domain:
+      - Chores
+      - Fitness
+      - Homelab
+      - Learning
+      - Personal
+      - Employer
+      - Work
+    source:
+      - "Source: Calendar"
+      - "Source: Email"
+    type:
+      - "Type: FOCUS"
+      - "Type: NOISE"
+
+  required_on_triage:
+    - domain
+    - type
+
+custom_fields:
+  priority:
+    field_name: "Priority"
+    type: number
+    range: [1, 5]
+    show_in_summary: true
+    required_on_triage: true
+  duration:
+    field_name: "Duration (min)"
+    type: number
+    unit: minutes
+    show_in_summary: true
+    required_on_triage: true
+  scheduled:
+    field_name: "Scheduled"
+    type: datetime
+    show_in_summary: false
+    required_on_triage: false
+    validation: iso8601
+
+pomodoro:
+  work_interval_minutes: 30
+  rest_interval_minutes: 10
+  intervals_before_long_rest: 4
+  long_rest_minutes: 30
+
+forgiving_system:
+  enabled: true
+  rules:
+    never_extend_other_due_dates: true
+    suggest_deprioritize_today: true
+    suggest_split_duration: true
+    always_surface_overdue: true
+
+response:
+  tier1:
+    - id
+    - name
+    - list
+    - due_date
+    - overdue
+    - priority
+    - duration_min
+    - labels
+    - has_description
+    - tasks_progress
+    - stopwatch_running
+  tier2_additions:
+    - description
+    - members
+    - task_lists_detail
+    - attachments_count
+    - comments_count
+    - custom_fields
+    - scheduled
+    - stopwatch_total_seconds
+    - created
+    - last_moved
+  tier3_additions:
+    - comments
+    - actions
+    - attachments_detail
+
+tools:
+  generate:
+    - name: triage_card
+      description: "Move card from INBOX, set priority, duration, labels, and due date"
+      composed_of: [move_card, update_card]
+      defaults:
+        source_list: inbox
+      required_params: [target_list, domain_label, type_label, priority, duration_min, due_date]
+
+    - name: schedule_for_today
+      description: "Move a card to TODAY"
+      composed_of: [move_card]
+      defaults:
+        target_list: today
+
+    - name: start_working
+      description: "Move a card to ACTIVE and start the stopwatch"
+      composed_of: [move_card, stopwatch]
+      defaults:
+        target_list: active
+
+    - name: park_as_noise
+      description: "Park a card in NOISE (WIP limit: 5)"
+      composed_of: [move_card]
+      defaults:
+        target_list: noise
+
+cache:
+  skeleton_ttl_seconds: 300
+  preload: true
