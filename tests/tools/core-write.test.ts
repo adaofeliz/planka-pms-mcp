@@ -5,6 +5,8 @@ import { createCardTool } from "../../src/tools/core/create-card.js";
 import { updateCardTool } from "../../src/tools/core/update-card.js";
 import { moveCardTool } from "../../src/tools/core/move-card.js";
 import { completeCardTool } from "../../src/tools/core/complete-card.js";
+import { blockCardTool } from "../../src/tools/core/block-card.js";
+import { archiveCardTool } from "../../src/tools/core/archive-card.js";
 import { NameResolver } from "../../src/client/resolver.js";
 import { BoardSkeletonCache, type BoardSkeleton } from "../../src/client/cache.js";
 import { createLogger } from "../../src/utils/logger.js";
@@ -168,6 +170,8 @@ function makeContext(transitions: PlankaConfig["board"]["transitions"] = {}, ini
     setCustomFieldValue: vi.fn(async () => {}),
     clearCustomFieldValue: vi.fn(async () => {}),
     moveCard: vi.fn(async (_cardId: string, targetListId: string) => cardDetail("card-1", targetListId)),
+    createComment: vi.fn(async () => ({ item: { id: "comment-1" } } as never)),
+    archiveCard: vi.fn(async (_cardId: string, targetListId: string) => cardDetail("card-1", targetListId)),
     sortList: vi.fn(async () => ({})),
   };
 
@@ -269,5 +273,29 @@ describe("core write tools", () => {
     const result = await completeCardTool.handler(context, { card_id: "card-1" });
     const payload = JSON.parse(result.content[0].text) as { completed_at: string };
     expect(payload.completed_at).toMatch(/\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it("block_card moves card to BLOCKED and writes reason comment", async () => {
+    const context = makeContext();
+    await blockCardTool.handler(context, { card_id: "card-1", reason: "Waiting on API" });
+
+    expect(vi.mocked(context.client.moveCard)).toHaveBeenCalledWith("card-1", "l-blocked");
+    expect(vi.mocked(context.client.createComment)).toHaveBeenCalledWith("card-1", "🚫 BLOCKED: Waiting on API");
+  });
+
+  it("archive_card returns validation error when card is not in DONE", async () => {
+    const context = makeContext();
+    const result = await archiveCardTool.handler(context, { card_id: "card-1" });
+    const payload = JSON.parse(result.content[0].text) as { error: string; suggestions?: string[] };
+
+    expect(payload.error).toContain("Card must be in DONE");
+    expect(payload.suggestions).toContain("Move the card to DONE first using complete_card");
+  });
+
+  it("archive_card calls archiveCard when card is in DONE", async () => {
+    const context = makeContext({}, "l-done");
+    await archiveCardTool.handler(context, { card_id: "card-1" });
+
+    expect(vi.mocked(context.client.archiveCard)).toHaveBeenCalledWith("card-1", "l-archive");
   });
 });

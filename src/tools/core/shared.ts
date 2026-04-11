@@ -7,6 +7,7 @@ import type {
   BoardResponse,
   CardResponse,
   CardsResponse,
+  CommentResponse,
   CommentsResponse,
   PlankaCard,
   PlankaLabel,
@@ -33,6 +34,8 @@ export interface ToolContext {
     setCustomFieldValue: (cardId: string, groupId: string, fieldId: string, value: string) => Promise<void>;
     clearCustomFieldValue: (cardId: string, groupId: string, fieldId: string) => Promise<void>;
     moveCard: (cardId: string, targetListId: string, position?: number) => Promise<CardResponse>;
+    createComment: (cardId: string, text: string) => Promise<CommentResponse>;
+    archiveCard: (cardId: string, archiveListId: string) => Promise<CardResponse>;
     sortList: (
       listId: string,
       fieldName: "name" | "dueDate" | "createdAt",
@@ -185,9 +188,6 @@ export function isOverdue(dueDate: string | null | undefined, isDueCompleted: bo
 
   return due.getTime() < now.getTime();
 }
-
-export { shapeCard, type CardTier1, type CardTier2, type CardTier3 } from "../../shaper/response-shaper.js";
-export { formatSeconds, formatDate, isOverdue as isOverdueFmt } from "../../shaper/formatters.js";
 
 export function toolError(
   message: string,
