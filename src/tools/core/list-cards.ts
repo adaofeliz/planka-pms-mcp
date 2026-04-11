@@ -7,6 +7,7 @@ import {
   getListName,
   getTaskProgress,
   normalizeCardSummary,
+  shapeCardsForTier,
   toolResult,
   type ToolContext,
 } from "./shared.js";
@@ -104,17 +105,23 @@ export const listCardsTool = {
       if (sortBy === "position") return a.card.position - b.card.position;
       if (sortBy === "created") return a.card.createdAt.localeCompare(b.card.createdAt);
       if (sortBy === "due_date") {
-        const aDue = a.summary.due ? new Date(a.summary.due).getTime() : Number.POSITIVE_INFINITY;
-        const bDue = b.summary.due ? new Date(b.summary.due).getTime() : Number.POSITIVE_INFINITY;
+        const aDue = a.summary.due_date ? new Date(a.summary.due_date).getTime() : Number.POSITIVE_INFINITY;
+        const bDue = b.summary.due_date ? new Date(b.summary.due_date).getTime() : Number.POSITIVE_INFINITY;
         return aDue - bDue;
       }
       return (a.summary.priority ?? Number.POSITIVE_INFINITY) - (b.summary.priority ?? Number.POSITIVE_INFINITY);
     });
 
+    const shaped = shapeCardsForTier(
+      cards.map((entry) => entry.summary),
+      context.config.response,
+      "summary",
+    );
+
     return toolResult({
       list: input.list,
-      total: cards.length,
-      cards: cards.map((entry) => entry.summary),
+      total: shaped.length,
+      cards: shaped,
     });
   },
 };

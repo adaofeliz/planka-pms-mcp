@@ -6,6 +6,7 @@ import {
   getListName,
   getTaskProgress,
   normalizeCardSummary,
+  shapeCardsForTier,
   toolResult,
   type ToolContext,
 } from "./shared.js";
@@ -113,15 +114,17 @@ export const searchCardsTool = {
     }
 
     if (input.has_due_date !== undefined) {
-      cards = cards.filter((card) => (input.has_due_date ? card.due !== null : card.due === null));
+      cards = cards.filter((card) => (input.has_due_date ? card.due_date !== null : card.due_date === null));
     }
 
     cards.sort((a, b) => a.name.localeCompare(b.name));
 
+    const shaped = shapeCardsForTier(cards, context.config.response, "summary");
+
     return toolResult({
       query: input.query ?? null,
-      total: cards.length,
-      cards,
+      total: shaped.length,
+      cards: shaped,
     });
   },
 };

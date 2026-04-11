@@ -30,6 +30,22 @@ export class ValidationError extends PlankaError {
   }
 }
 
+export class AmbiguousMatchError extends PlankaError {
+  public readonly matches: string[];
+
+  constructor(message: string, matches: string[], suggestions: string[] = []) {
+    super(message, "AMBIGUOUS_MATCH", suggestions);
+    this.matches = matches;
+  }
+
+  override toJSON(): { code: string; message: string; suggestions: string[]; matches: string[] } {
+    return {
+      ...super.toJSON(),
+      matches: this.matches,
+    };
+  }
+}
+
 export class NotFoundError extends PlankaError {
   public readonly available: string[];
 

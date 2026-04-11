@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { toolResult, type ToolContext } from "./shared.js";
+import { shapeCardForTier, toolResult, type ToolContext } from "./shared.js";
 
 const inputSchema = {
   card_id: z.string().min(1).describe("Card ID"),
@@ -38,32 +38,47 @@ export const getCardTool = {
     const detail = {
       id: card.id,
       name: card.name,
+      list: card.listId,
+      priority: null,
+      duration_min: null,
+      labels: [],
+      has_description: Boolean(card.description && card.description.trim().length > 0),
+      tasks_progress: null,
+      stopwatch_running: card.stopwatch.startedAt !== null,
       description: card.description,
       due_date: card.dueDate,
       overdue: isOverdue(card.dueDate, card.isDueCompleted, now),
-      list_id: card.listId,
-      created_at: card.createdAt,
-      updated_at: card.updatedAt,
-      stopwatch: card.stopwatch,
+      members: [],
       task_lists: response.included.taskLists ?? [],
-      tasks: response.included.tasks ?? [],
-      labels: response.included.cardLabels ?? [],
-      members: response.included.cardMemberships ?? [],
+      task_lists_detail: response.included.taskLists ?? [],
+      comments_count: card.commentsTotal,
       custom_fields: response.included.customFieldValues ?? [],
+      scheduled: null,
+      stopwatch_total_seconds: card.stopwatch.total,
+      created: card.createdAt,
+      last_moved: card.listChangedAt,
+      comments: [] as unknown[],
+      actions: [] as unknown[],
+      attachments_detail: [] as unknown[],
     };
 
     const tier3: { comments?: unknown[]; actions?: unknown[] } = {};
 
     if (input.include_comments) {
       tier3.comments = (await context.client.getComments(input.card_id)).items;
+      detail.comments = tier3.comments;
     }
 
     if (input.include_actions) {
       tier3.actions = (await context.client.getCardActions(input.card_id)).items;
+      detail.actions = tier3.actions;
     }
 
+    const level = input.include_comments || input.include_actions ? "deep" : "detail";
+    const shapedCard = shapeCardForTier(detail, context.config.response, level);
+
     return toolResult({
-      card: detail,
+      card: shapedCard,
       ...(input.include_comments || input.include_actions ? { tier3 } : {}),
     });
   },

@@ -1,6 +1,9 @@
 import { z } from "zod";
 
 import { isOverdue, toolResult, type ToolContext } from "./shared.js";
+import { NotFoundError } from "../../utils/errors.js";
+import { groupCardsByDueDateWindow } from "../../scheduling/due-date-windows.js";
+import { evaluateConfiguredWipLimits, getWipWarnings } from "../../scheduling/wip-limits.js";
 
 const inputSchema = {
   force_refresh: z.boolean().optional().describe("Force refresh board skeleton before summarizing"),
@@ -30,9 +33,16 @@ export const dailySummaryTool = {
     const todayListId = resolver.resolveTodayListId();
     const activeListId = resolver.resolveListId(context.config.board.lists.active);
     const blockedListId = resolver.resolveBlockedListId();
-    const focusListId = context.config.board.lists.focus
-      ? resolver.resolveListId(context.config.board.lists.focus)
-      : undefined;
+    let focusListId: string | undefined;
+    if (context.config.board.lists.focus) {
+      try {
+        focusListId = resolver.resolveListId(context.config.board.lists.focus);
+      } catch (error) {
+        if (!(error instanceof NotFoundError)) {
+          throw error;
+        }
+      }
+    }
     const inboxListId = resolver.resolveInboxListId();
     const doneListId = resolver.resolveDoneListId();
 
@@ -42,6 +52,30 @@ export const dailySummaryTool = {
 
     const overdueCards = cards.filter((card) => isOverdue(card.dueDate, card.isDueCompleted, now));
     const donePendingArchive = inList(doneListId).filter((card) => card.prevListId !== skeleton.archiveListId);
+    const byWindow = groupCardsByDueDateWindow(cards, context.config.board.due_date_windows, now);
+
+    let noiseListId: string | undefined;
+    if (context.config.board.lists.noise) {
+      try {
+        noiseListId = resolver.resolveListId(context.config.board.lists.noise);
+      } catch (error) {
+        if (!(error instanceof NotFoundError)) {
+          throw error;
+        }
+      }
+    }
+
+    const roleCounts = {
+      noise: noiseListId ? inList(noiseListId).length : 0,
+      focus: focusListId ? inList(focusListId).length : 0,
+    };
+    const wipStatuses = evaluateConfiguredWipLimits(roleCounts, context.config.board.wip_limits);
+    const wipWarnings = getWipWarnings(wipStatuses);
+
+    const promotionSuggestions = {
+      imminent: byWindow.imminent.map((card) => ({ card_id: card.id, name: card.name, suggestion: "Promote to TODAY immediately" })),
+      approaching: byWindow.approaching.map((card) => ({ card_id: card.id, name: card.name, suggestion: "Plan promotion window soon" })),
+    };
 
     return toolResult({
       board: {
@@ -68,6 +102,20 @@ export const dailySummaryTool = {
       },
       done_pending_archive: {
         total: donePendingArchive.length,
+      },
+      scheduling: {
+        by_due_window: {
+          overdue: byWindow.overdue.length,
+          imminent: byWindow.imminent.length,
+          approaching: byWindow.approaching.length,
+          backlog_safe: byWindow.backlog_safe.length,
+          unscheduled: byWindow.unscheduled.length,
+        },
+        promotion_suggestions: promotionSuggestions,
+      },
+      wip: {
+        statuses: wipStatuses,
+        warnings: wipWarnings,
       },
       generated_at: now.toISOString(),
     });

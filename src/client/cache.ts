@@ -1,6 +1,7 @@
 import type {
   BoardResponse,
   PlankaCard,
+  PlankaCardLabel,
   PlankaCustomField,
   PlankaCustomFieldGroup,
   PlankaLabel,
@@ -12,6 +13,7 @@ export interface BoardSkeleton {
   board: BoardResponse["item"];
   lists: PlankaList[];
   labels: PlankaLabel[];
+  cardLabels: PlankaCardLabel[];
   customFieldGroups: PlankaCustomFieldGroup[];
   customFields: PlankaCustomField[];
   members: PlankaUser[];
@@ -34,6 +36,7 @@ export function normalizeBoardSkeleton(response: BoardResponse): BoardSkeleton {
     board: response.item,
     lists,
     labels: response.included.labels ?? [],
+    cardLabels: response.included.cardLabels ?? [],
     customFieldGroups: response.included.customFieldGroups ?? [],
     customFields: response.included.customFields ?? [],
     members: response.included.users ?? [],
