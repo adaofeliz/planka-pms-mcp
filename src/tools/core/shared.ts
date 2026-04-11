@@ -150,7 +150,7 @@ export function normalizeCardSummary(
     labels: labelNames,
     has_description: Boolean(card.description && card.description.trim().length > 0),
     tasks_progress: tasksProgress,
-    stopwatch_running: card.stopwatch.startedAt !== null,
+    stopwatch_running: card.stopwatch?.startedAt !== null && card.stopwatch?.startedAt !== undefined,
   };
 }
 

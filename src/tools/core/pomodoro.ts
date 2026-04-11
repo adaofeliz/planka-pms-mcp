@@ -30,7 +30,7 @@ export const pomodoroTool = {
       if (input.action === "start_work") {
         const card = await ctx.client.getCard(input.card_id);
         if (!ctx.client.startStopwatch) return toolError("startStopwatch not available");
-        await ctx.client.startStopwatch(input.card_id, card.item.stopwatch.total);
+        await ctx.client.startStopwatch(input.card_id, card.item.stopwatch?.total ?? 0);
         const session = tracker.startWork(input.card_id, workMin, now);
         const { elapsed, remaining } = tracker.computeRemaining(session, now);
         return toolResult({
@@ -48,7 +48,7 @@ export const pomodoroTool = {
 
       if (input.action === "start_rest") {
         const card = await ctx.client.getCard(input.card_id);
-        const sw = card.item.stopwatch;
+        const sw = card.item.stopwatch ?? { total: 0, startedAt: null };
         if (sw.startedAt) {
           if (!ctx.client.stopStopwatch) return toolError("stopStopwatch not available");
           await ctx.client.stopStopwatch(input.card_id, sw.total, sw.startedAt);
@@ -70,7 +70,7 @@ export const pomodoroTool = {
 
       if (input.action === "stop") {
         const card = await ctx.client.getCard(input.card_id);
-        const sw = card.item.stopwatch;
+        const sw = card.item.stopwatch ?? { total: 0, startedAt: null };
         if (sw.startedAt) {
           if (!ctx.client.stopStopwatch) return toolError("stopStopwatch not available");
           await ctx.client.stopStopwatch(input.card_id, sw.total, sw.startedAt);

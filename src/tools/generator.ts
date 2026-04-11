@@ -228,7 +228,7 @@ export function registerWorkflowTools(
           if (!stopwatchCapableClient.startStopwatch) {
             throw new ValidationError("Client does not support stopwatch operations");
           }
-          await stopwatchCapableClient.startStopwatch(cardId, card.item.stopwatch.total);
+          await stopwatchCapableClient.startStopwatch(cardId, card.item.stopwatch?.total ?? 0);
 
           return toolResult({
             status: "started_working",

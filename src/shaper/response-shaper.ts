@@ -124,7 +124,7 @@ export function shapeCard(opts: ShapeCardOptions): CardTier1 | CardTier2 | CardT
     labels: labelNames,
     has_description: !!card.description?.trim(),
     tasks_progress,
-    stopwatch_running: card.stopwatch.startedAt !== null,
+    stopwatch_running: card.stopwatch?.startedAt != null,
   };
 
   if (opts.tier === "t1") return tier1;
@@ -157,7 +157,7 @@ export function shapeCard(opts: ShapeCardOptions): CardTier1 | CardTier2 | CardT
     comments_count: opts.commentsCount ?? card.commentsTotal,
     custom_fields: allCustomFields,
     scheduled: scheduledRaw,
-    stopwatch_total_seconds: card.stopwatch.total,
+    stopwatch_total_seconds: card.stopwatch?.total ?? 0,
     created: formatDate(card.createdAt) ?? card.createdAt,
     last_moved: formatDate(card.listChangedAt) ?? card.listChangedAt,
   };

@@ -13,7 +13,7 @@ export interface PlankaCard {
   description: string | null;
   dueDate: string | null;
   isDueCompleted: boolean;
-  stopwatch: StopwatchData;
+  stopwatch: StopwatchData | null;
   commentsTotal: number;
   isClosed: boolean;
   listChangedAt: string;

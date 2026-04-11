@@ -18,7 +18,7 @@ export const stopwatchTool = {
       }
 
       const cardResponse = await ctx.client.getCard(input.card_id);
-      const sw = cardResponse.item.stopwatch;
+      const sw = cardResponse.item.stopwatch ?? { total: 0, startedAt: null };
 
       let updatedSw = sw;
 
@@ -26,16 +26,16 @@ export const stopwatchTool = {
         if (sw.startedAt) return toolError("Stopwatch is already running");
         if (!ctx.client.startStopwatch) return toolError("startStopwatch not available");
         const result = await ctx.client.startStopwatch(input.card_id, sw.total);
-        updatedSw = result.item.stopwatch;
+        updatedSw = result.item.stopwatch ?? { total: 0, startedAt: null };
       } else if (input.action === "stop") {
         if (!sw.startedAt) return toolError("Stopwatch is not running");
         if (!ctx.client.stopStopwatch) return toolError("stopStopwatch not available");
         const result = await ctx.client.stopStopwatch(input.card_id, sw.total, sw.startedAt);
-        updatedSw = result.item.stopwatch;
+        updatedSw = result.item.stopwatch ?? { total: 0, startedAt: null };
       } else if (input.action === "reset") {
         if (!ctx.client.resetStopwatch) return toolError("resetStopwatch not available");
         const result = await ctx.client.resetStopwatch(input.card_id);
-        updatedSw = result.item.stopwatch;
+        updatedSw = result.item.stopwatch ?? { total: 0, startedAt: null };
       }
 
       const status = ctx.client.getStopwatchStatus(updatedSw);
