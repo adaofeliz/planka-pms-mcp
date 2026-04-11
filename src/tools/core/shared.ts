@@ -36,6 +36,15 @@ export interface ToolContext {
     moveCard: (cardId: string, targetListId: string, position?: number) => Promise<CardResponse>;
     createComment: (cardId: string, text: string) => Promise<CommentResponse>;
     archiveCard: (cardId: string, archiveListId: string) => Promise<CardResponse>;
+    getArchivedCards?: (
+      archiveListId: string,
+      options?: import("../../client/types.js").GetCardsByListOptions,
+    ) => Promise<CardsResponse>;
+    createTaskList?: (cardId: string, data: import("../../client/types.js").CreateTaskListInput) => Promise<import("../../client/types.js").TaskListResponse>;
+    createTask?: (taskListId: string, data: import("../../client/types.js").CreateTaskInput) => Promise<import("../../client/types.js").TaskResponse>;
+    updateTask?: (taskId: string, data: import("../../client/types.js").UpdateTaskInput) => Promise<import("../../client/types.js").TaskResponse>;
+    deleteTask?: (taskId: string) => Promise<import("../../client/types.js").TaskResponse>;
+    deleteTaskList?: (taskListId: string) => Promise<import("../../client/types.js").TaskListResponse>;
     sortList: (
       listId: string,
       fieldName: "name" | "dueDate" | "createdAt",
