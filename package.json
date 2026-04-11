@@ -24,7 +24,6 @@
     "prepublishOnly": "npm run build"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
     "access": "public"
   },
   "keywords": [

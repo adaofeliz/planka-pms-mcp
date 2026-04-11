@@ -1,11 +1,32 @@
-name: Publish to GitHub Packages
+name: Publish Package
 
 on:
   release:
     types: [published]
 
 jobs:
-  publish:
+  publish-npm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - run: rm -f package-lock.json && npm install
+
+      - run: npm test
+
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-gpr:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -20,8 +41,6 @@ jobs:
           scope: "@adaofeliz"
 
       - run: rm -f package-lock.json && npm install
-
-      - run: npm test
 
       - run: npm publish
         env:
