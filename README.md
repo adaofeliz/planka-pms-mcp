@@ -1,95 +1,113 @@
 # @adflz/planka-pms-mcp
 
-A GTD-inspired personal productivity system that gives AI agents the ability to manage a full task lifecycle — from inbox capture through triage, scheduling, focused execution with Pomodoro time-tracking, to completion and archival. Built on [Planka](https://planka.app) as the backing Kanban board, exposed via the Model Context Protocol (MCP).
+GTD-inspired MCP server for Planka boards. It gives AI agents a workflow-aware productivity layer: inbox capture, triage, scheduling, focused execution, stopwatch/Pomodoro tracking, done/archive handling, and overdue recovery suggestions.
 
-This is not a generic Planka API wrapper. It's a **semantic productivity layer** that encodes workflow rules (valid transitions, WIP limits, due-date-windowed promotion), progressive disclosure (tiered responses that cut ~80% of token waste), and a forgiving system that surfaces overdue tasks with resolution strategies instead of punishing the user.
+This is intentionally semantic (workflow tools + board rules), not a raw Planka CRUD wrapper.
 
-## Installation
+## Prerequisites
 
-Use with any MCP-compatible client (Claude Code, Cursor, etc.):
+- Node.js 18+
+- npm
+- A running Planka instance with API key
+- A target board ID
 
-```json
-{
-  "mcpServers": {
-    "planka-pms": {
-      "command": "npx",
-      "args": ["-y", "@adflz/planka-pms-mcp"],
-      "env": {
-        "PLANKA_BASE_URL": "https://your-planka-domain",
-        "PLANKA_API_KEY": "your-api-key"
-      }
-    }
-  }
-}
-```
-
-Or run directly:
+## Setup
 
 ```bash
-npx -y @adflz/planka-pms-mcp
+npm install
+cp .env.example .env
+```
+
+Fill `.env` values:
+
+- `PLANKA_BASE_URL`
+- `PLANKA_API_KEY`
+- `PLANKA_BOARD_ID`
+- optional: `PLANKA_CONFIG_PATH` (defaults to `config/default.yaml`)
+
+Build once:
+
+```bash
+npm run build
 ```
 
 ## Configuration
 
-Set these environment variables before running:
+Main config is `config/default.yaml`.
 
-| Variable | Description |
-|----------|-------------|
-| `PLANKA_BASE_URL` | Your Planka instance URL (e.g. `https://planka.example.com`) |
-| `PLANKA_API_KEY` | Your Planka API key |
+- `connection`: Planka URL/key/board ID (via `${ENV_VAR}` interpolation)
+- `board`: list names, transitions, WIP limits, sort rules, due-date windows
+- `labels` / `custom_fields`: required triage metadata
+- `tools.generate`: dynamic workflow tools (e.g. `triage_card`, `start_working`)
+- `cache`: board skeleton TTL + optional startup preload
 
-## Local Development
+## Running
+
+### stdio mode (default)
+
+Use this for MCP clients like Claude Code / Cursor:
 
 ```bash
-git clone https://github.com/adaofeliz/planka-pms-mcp.git
-cd planka-pms-mcp
-npm install
-npm run build
+node dist/index.js
 ```
 
-The server supports two transport modes:
-
-### stdio (default)
-
-Used by MCP clients like Claude Code and Cursor. Test with the inspector:
+With MCP Inspector:
 
 ```bash
 npx @modelcontextprotocol/inspector node dist/index.js
 ```
 
-### Streamable HTTP
-
-Starts an HTTP server on `localhost:3000/mcp`. Useful for web-based clients and the inspector's HTTP mode:
+### Streamable HTTP mode
 
 ```bash
 node dist/index.js --http
-```
-
-Custom port:
-
-```bash
 node dist/index.js --http --port=8080
 ```
 
-Test with the inspector over HTTP:
+Endpoints:
+
+- MCP: `http://localhost:<port>/mcp`
+- Health: `http://localhost:<port>/health`
+
+## Available tools (18+ core)
+
+### Read
+
+- `board_overview`, `list_cards`, `get_card`, `search_cards`, `daily_summary`, `overdue_check`, `search_archive`
+
+### Write
+
+- `create_card`, `update_card`, `move_card`, `complete_card`, `block_card`, `archive_card`, `manage_checklist`, `add_comment`, `sort_list`
+
+### Workflow (generated from config)
+
+- `triage_card`, `schedule_for_today`, `start_working`, `park_as_noise`
+
+### Time tracking
+
+- `stopwatch`, `pomodoro`
+
+## Generated workflow tools
+
+`config/default.yaml` drives generation of higher-level tools that compose core operations and enforce board semantics. Typical flow:
+
+`triage_card` → `schedule_for_today` → `start_working` → `complete_card` → `archive_card`
+
+## Testing
+
+- Mocked/full suite (default):
 
 ```bash
-npx @modelcontextprotocol/inspector --cli http://localhost:3000/mcp
+npm test
 ```
 
-### Watch mode
-
-For development with auto-rebuild on file changes:
+- Live smoke tests against a real Planka instance:
 
 ```bash
-npm run dev
+PLANKA_LIVE_TESTS=1 npm run test:live
 ```
 
-Then in a separate terminal, run the inspector pointing to the built output.
-
-## Documentation
-
-See the [`docs/`](./docs/) folder for full architecture and tool catalog.
+Live tests are skipped unless `PLANKA_LIVE_TESTS=1` is set.
 
 ## License
 

@@ -13,6 +13,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
+    "test:live": "PLANKA_LIVE_TESTS=1 vitest run tests/live",
     "test:watch": "vitest",
     "test:unit": "vitest run tests/unit"
   },

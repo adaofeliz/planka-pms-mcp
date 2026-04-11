@@ -2,6 +2,32 @@ import { normalizeBoardSkeleton } from "./client/cache.js";
 import { loadConfig } from "./config/loader.js";
 import { createServiceContainer, type ServiceContainer } from "./service-container.js";
 
+function formatStartupError(configPath: string, error: unknown): Error {
+  const message = error instanceof Error ? error.message : String(error);
+
+  if (message.startsWith("Missing required environment variable:")) {
+    const variable = message.split(":")[1]?.trim() ?? "unknown";
+    return new Error(
+      `Configuration failed (${configPath}): missing environment variable ${variable}. ` +
+        "Set it in your .env file or shell environment.",
+    );
+  }
+
+  if (message.startsWith("Cannot read config file:")) {
+    return new Error(`Configuration failed: ${message}`);
+  }
+
+  if (message.startsWith("Invalid YAML in config file:")) {
+    return new Error(`Configuration failed: ${message}`);
+  }
+
+  if (message.startsWith("Config validation failed:")) {
+    return new Error(`Configuration failed (${configPath}): ${message}`);
+  }
+
+  return new Error(`Service initialization failed (${configPath}): ${message}`);
+}
+
 export function resolveConfigPath(): string {
   const flag = process.argv.find((a) => a.startsWith("--config="));
   if (flag) {
@@ -13,7 +39,16 @@ export function resolveConfigPath(): string {
 
 export function resolvePort(): number {
   const portFlag = process.argv.find((a) => a.startsWith("--port="));
-  return portFlag ? Number(portFlag.split("=")[1]) : 3000;
+  if (!portFlag) {
+    return 3000;
+  }
+
+  const value = Number(portFlag.split("=")[1]);
+  if (!Number.isInteger(value) || value < 1 || value > 65535) {
+    throw new Error(`Invalid --port value: ${portFlag.split("=")[1]}. Expected an integer in range 1-65535.`);
+  }
+
+  return value;
 }
 
 export function resolveUseHttp(): boolean {
@@ -22,15 +57,21 @@ export function resolveUseHttp(): boolean {
 
 export async function initializeServices(serverName: string): Promise<ServiceContainer> {
   const configPath = resolveConfigPath();
-  const config = loadConfig(configPath);
-  const services = createServiceContainer(config, serverName);
+  let services: ServiceContainer;
 
-  if (config.cache.preload) {
+  try {
+    const config = loadConfig(configPath);
+    services = createServiceContainer(config, serverName);
+  } catch (error) {
+    throw formatStartupError(configPath, error);
+  }
+
+  if (services.config.cache.preload) {
     try {
-      const boardResponse = await services.client.getBoard(config.connection.board_id);
+      const boardResponse = await services.client.getBoard(services.config.connection.board_id);
       const skeleton = normalizeBoardSkeleton(boardResponse);
-      services.cache.set(config.connection.board_id, skeleton);
-      services.logger.info("Board skeleton preloaded", { boardId: config.connection.board_id });
+      services.cache.set(services.config.connection.board_id, skeleton);
+      services.logger.info("Board skeleton preloaded", { boardId: services.config.connection.board_id });
     } catch (err) {
       services.logger.warn("Board skeleton preload failed (will retry on first tool call)", {
         error: err instanceof Error ? err.message : String(err),
