@@ -4,6 +4,7 @@ import { isOverdue, toolResult, type ToolContext } from "./shared.js";
 import { NotFoundError } from "../../utils/errors.js";
 import { groupCardsByDueDateWindow } from "../../scheduling/due-date-windows.js";
 import { evaluateConfiguredWipLimits, getWipWarnings } from "../../scheduling/wip-limits.js";
+import { analyzeForgivingSuggestions } from "../../scheduling/forgiving.js";
 
 const inputSchema = {
   force_refresh: z.boolean().optional().describe("Force refresh board skeleton before summarizing"),
@@ -77,6 +78,19 @@ export const dailySummaryTool = {
       approaching: byWindow.approaching.map((card) => ({ card_id: card.id, name: card.name, suggestion: "Plan promotion window soon" })),
     };
 
+    const forgiving = analyzeForgivingSuggestions(
+      overdueCards.map((card) => ({
+        card_id: card.id,
+        name: card.name,
+        due_date: card.dueDate,
+        days_overdue: card.dueDate ? Math.max(0, Math.floor((now.getTime() - new Date(card.dueDate).getTime()) / (1000 * 60 * 60 * 24))) : 0,
+        priority: null,
+        duration_min: null,
+      })),
+      inList(todayListId).length,
+      context.config.forgiving_system,
+    );
+
     return toolResult({
       board: {
         id: skeleton.board.id,
@@ -116,6 +130,10 @@ export const dailySummaryTool = {
       wip: {
         statuses: wipStatuses,
         warnings: wipWarnings,
+      },
+      forgiving: {
+        warnings: forgiving.warnings,
+        suggestions: forgiving.suggestions,
       },
       generated_at: now.toISOString(),
     });

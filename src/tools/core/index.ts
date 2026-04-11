@@ -9,6 +9,7 @@ export { moveCardTool } from "./move-card.js";
 export { completeCardTool } from "./complete-card.js";
 export { blockCardTool } from "./block-card.js";
 export { archiveCardTool } from "./archive-card.js";
+export { overdueCheckTool } from "./overdue-check.js";
 
 export const CORE_TOOLS = [
   "board_overview",
@@ -22,6 +23,7 @@ export const CORE_TOOLS = [
   "complete_card",
   "block_card",
   "archive_card",
+  "overdue_check",
 ] as const;
 
 export type CoreToolName = (typeof CORE_TOOLS)[number];
