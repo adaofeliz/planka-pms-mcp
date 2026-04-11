@@ -1,29 +1,78 @@
-export { boardOverviewTool, boardOverviewHandler, boardOverviewSchema } from "./board-overview.js";
-export { listCardsTool } from "./list-cards.js";
-export { getCardTool } from "./get-card.js";
-export { searchCardsTool } from "./search-cards.js";
-export { dailySummaryTool } from "./daily-summary.js";
-export { createCardTool } from "./create-card.js";
-export { updateCardTool } from "./update-card.js";
-export { moveCardTool } from "./move-card.js";
-export { completeCardTool } from "./complete-card.js";
-export { blockCardTool } from "./block-card.js";
-export { archiveCardTool } from "./archive-card.js";
-export { overdueCheckTool } from "./overdue-check.js";
+import { boardOverviewTool, boardOverviewHandler } from "./board-overview.js";
+import { listCardsTool } from "./list-cards.js";
+import { getCardTool } from "./get-card.js";
+import { searchCardsTool } from "./search-cards.js";
+import { dailySummaryTool } from "./daily-summary.js";
+import { createCardTool } from "./create-card.js";
+import { updateCardTool } from "./update-card.js";
+import { moveCardTool } from "./move-card.js";
+import { completeCardTool } from "./complete-card.js";
+import { blockCardTool } from "./block-card.js";
+import { archiveCardTool } from "./archive-card.js";
+import { overdueCheckTool } from "./overdue-check.js";
+import { manageChecklistTool } from "./manage-checklist.js";
+import { addCommentTool } from "./add-comment.js";
+import { searchArchiveTool } from "./search-archive.js";
+import type { ToolContext } from "./shared.js";
+import type { CoreToolDefinition } from "../generator.js";
 
-export const CORE_TOOLS = [
-  "board_overview",
-  "list_cards",
-  "get_card",
-  "search_cards",
-  "daily_summary",
-  "create_card",
-  "update_card",
-  "move_card",
-  "complete_card",
-  "block_card",
-  "archive_card",
-  "overdue_check",
-] as const;
+function adaptCoreTool<TInput>(tool: {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+  annotations: CoreToolDefinition["annotations"];
+  handler: (ctx: ToolContext, input: TInput) => Promise<{ content: Array<{ type: "text"; text: string }> }>;
+}): CoreToolDefinition {
+  return {
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
+    annotations: tool.annotations,
+    handler: async (ctx: ToolContext, input: Record<string, unknown>) => tool.handler(ctx, input as TInput),
+  };
+}
 
-export type CoreToolName = (typeof CORE_TOOLS)[number];
+export {
+  boardOverviewTool,
+  boardOverviewHandler,
+  listCardsTool,
+  getCardTool,
+  searchCardsTool,
+  dailySummaryTool,
+  createCardTool,
+  updateCardTool,
+  moveCardTool,
+  completeCardTool,
+  blockCardTool,
+  archiveCardTool,
+  overdueCheckTool,
+  manageChecklistTool,
+  addCommentTool,
+  searchArchiveTool,
+};
+
+export const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
+  {
+    ...boardOverviewTool,
+    handler: async (context: ToolContext, input: Record<string, unknown>) =>
+      boardOverviewHandler({ board_id: input.board_id as string | undefined }, context),
+  },
+  adaptCoreTool(listCardsTool),
+  adaptCoreTool(getCardTool),
+  adaptCoreTool(searchCardsTool),
+  adaptCoreTool(dailySummaryTool),
+  adaptCoreTool(createCardTool),
+  adaptCoreTool(updateCardTool),
+  adaptCoreTool(moveCardTool),
+  adaptCoreTool(completeCardTool),
+  adaptCoreTool(blockCardTool),
+  adaptCoreTool(archiveCardTool),
+  adaptCoreTool(overdueCheckTool),
+  adaptCoreTool(manageChecklistTool),
+  adaptCoreTool(addCommentTool),
+  adaptCoreTool(searchArchiveTool),
+];
+
+export const coreToolDefinitions = CORE_TOOL_DEFINITIONS;
+
+export const CORE_TOOLS = CORE_TOOL_DEFINITIONS.map((tool) => tool.name) as readonly string[];

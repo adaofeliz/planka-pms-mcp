@@ -3,15 +3,13 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createServer, type Server as HttpServer } from "node:http";
 import { randomUUID } from "node:crypto";
-import { z } from "zod";
 
 import { loadConfig } from "./config/loader.js";
 import { createLogger } from "./utils/logger.js";
 import { PlankaClient } from "./client/planka-client.js";
-import { BoardSkeletonCache, normalizeBoardSkeleton } from "./client/cache.js";
-import { NameResolver } from "./client/resolver.js";
-import { boardOverviewTool, boardOverviewHandler } from "./tools/core/board-overview.js";
-import type { ToolContext } from "./tools/core/shared.js";
+import { BoardSkeletonCache } from "./client/cache.js";
+import { CORE_TOOL_DEFINITIONS } from "./tools/core/index.js";
+import { registerCoreTools } from "./tools/generator.js";
 
 const SERVER_NAME = "planka-pms";
 const SERVER_VERSION = "0.1.0";
@@ -41,55 +39,7 @@ function log(message: string) {
 }
 
 function registerTools(server: McpServer) {
-  server.registerTool(
-    "hello_world",
-    {
-      description:
-        "A simple hello world tool to verify the MCP server is working",
-      inputSchema: {
-        name: z.string().optional().describe("Name to greet"),
-      },
-      annotations: {
-        readOnlyHint: true,
-        idempotentHint: true,
-        destructiveHint: false,
-      },
-    },
-    async ({ name }) => {
-      log(`tool/call hello_world ${JSON.stringify({ name })}`);
-      const result = {
-        content: [
-          {
-            type: "text" as const,
-            text: `Hello, ${name ?? "World"}! The Planka PMS MCP server is running.`,
-          },
-        ],
-      };
-      log(`tool/result hello_world -> ${result.content[0].text}`);
-      return result;
-    },
-  );
-
-  server.registerTool(
-    boardOverviewTool.name,
-    {
-      description: boardOverviewTool.description,
-      inputSchema: boardOverviewTool.inputSchema,
-      annotations: boardOverviewTool.annotations,
-    },
-    async (params) => {
-      const cachedSkeleton = cache.get(config.connection.board_id);
-      const skeleton = cachedSkeleton ?? normalizeBoardSkeleton(await client.getBoard(config.connection.board_id));
-      if (!cachedSkeleton) {
-        cache.set(config.connection.board_id, skeleton);
-      }
-      const resolver = new NameResolver(skeleton, config);
-
-      const ctx: ToolContext = { config, client, cache, resolver, logger };
-      return boardOverviewHandler(params as { board_id?: string }, ctx);
-    },
-  );
-
+  registerCoreTools(server, CORE_TOOL_DEFINITIONS, config, client, cache, logger);
 }
 
 async function startHttpServer() {
