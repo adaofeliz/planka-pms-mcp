@@ -1,5 +1,5 @@
 {
-  "name": "@adflz/planka-pms-mcp",
+  "name": "@adaofeliz/planka-pms-mcp",
   "version": "0.1.2",
   "description": "GTD-inspired productivity system for AI agents — inbox capture, triage, scheduling, Pomodoro execution, and archival via Planka",
   "type": "module",
@@ -10,6 +10,10 @@
     "dist",
     "config"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adaofeliz/planka-pms-mcp.git"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch --onSuccess \"node dist/index.js --http --port=3000\"",
@@ -20,6 +24,7 @@
     "prepublishOnly": "npm run build"
   },
   "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
     "access": "public"
   },
   "keywords": [

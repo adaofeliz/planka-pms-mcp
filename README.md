@@ -1,4 +1,4 @@
-# @adflz/planka-pms-mcp
+# @adaofeliz/planka-pms-mcp
 
 GTD-inspired MCP server for Planka boards. It gives AI agents a workflow-aware productivity layer: inbox capture, triage, scheduling, focused execution, stopwatch/Pomodoro tracking, done/archive handling, and overdue recovery suggestions.
 
@@ -43,9 +43,39 @@ Main config is `config/default.yaml`.
 
 ## Running
 
+### MCP client configuration (npx)
+
+Add to your MCP client config (Claude Desktop, Cursor, MCPHub, etc.):
+
+```json
+{
+  "mcpServers": {
+    "planka-pms-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "--registry=https://npm.pkg.github.com",
+        "@adaofeliz/planka-pms-mcp"
+      ],
+      "env": {
+        "PLANKA_BASE_URL": "https://your-planka-instance.com",
+        "PLANKA_API_KEY": "your-api-key",
+        "PLANKA_BOARD_ID": "your-board-id"
+      }
+    }
+  }
+}
+```
+
+If you have `@adaofeliz:registry=https://npm.pkg.github.com` in your `~/.npmrc`, you can omit the `--registry` arg:
+
+```json
+"args": ["-y", "@adaofeliz/planka-pms-mcp"]
+```
+
 ### stdio mode (default)
 
-Use this for MCP clients like Claude Code / Cursor:
+Use this for local development:
 
 ```bash
 node dist/index.js
