@@ -4,6 +4,8 @@ import type { ToolContext } from "../../src/tools/core/shared.js";
 import { manageChecklistTool } from "../../src/tools/core/manage-checklist.js";
 import { addCommentTool } from "../../src/tools/core/add-comment.js";
 import { searchArchiveTool } from "../../src/tools/core/search-archive.js";
+import { stopwatchTool } from "../../src/tools/core/stopwatch.js";
+import { sortListTool } from "../../src/tools/core/sort-list.js";
 import { NameResolver } from "../../src/client/resolver.js";
 import { BoardSkeletonCache, type BoardSkeleton } from "../../src/client/cache.js";
 import type { PlankaConfig } from "../../src/config/types.js";
@@ -151,7 +153,10 @@ function makeContext(): ToolContext {
     moveCard: vi.fn(async () => cardDetail),
     createComment: vi.fn(async () => ({ item: { id: "cm-1", text: "hello", cardId: "card-1", userId: "u-1", createdAt: "2026-01-01", updatedAt: "2026-01-01" }, included: { users: [] } })),
     archiveCard: vi.fn(async () => cardDetail),
-    sortList: vi.fn(async () => ({})),
+    sortList: vi.fn(async () => ({ items: [
+      { name: "A", dueDate: "2026-01-01T00:00:00.000Z" },
+      { name: "Z", dueDate: "2026-01-05T00:00:00.000Z" },
+    ] })),
     createTaskList: vi.fn(async () => ({ item: { id: "tl-2", name: "Extra", position: 2, cardId: "card-1", showOnFrontOfCard: true, hideCompletedTasks: false }, included: { tasks: [] } })),
     createTask: vi.fn(async () => ({ item: { id: "t-2", name: "new", position: 2, isCompleted: false, taskListId: "tl-1", assigneeUserId: null } })),
     updateTask: vi.fn(async () => ({ item: { id: "t-1", name: "Task", position: 1, isCompleted: true, taskListId: "tl-1", assigneeUserId: null } })),
@@ -212,6 +217,25 @@ function makeContext(): ToolContext {
         customFieldValues: [],
         users: [],
       },
+    })),
+    startStopwatch: vi.fn(async () => ({
+      ...cardDetail,
+      item: { ...cardDetail.item, stopwatch: { total: 0, startedAt: "2026-01-10T00:00:00.000Z" } },
+    })),
+    stopStopwatch: vi.fn(async () => ({
+      ...cardDetail,
+      item: { ...cardDetail.item, stopwatch: { total: 120, startedAt: null } },
+    })),
+    resetStopwatch: vi.fn(async () => ({
+      ...cardDetail,
+      item: { ...cardDetail.item, stopwatch: { total: 0, startedAt: null } },
+    })),
+    getStopwatchStatus: vi.fn((stopwatch) => ({
+      total: stopwatch.total,
+      startedAt: stopwatch.startedAt,
+      running: stopwatch.startedAt !== null,
+      elapsed: stopwatch.startedAt ? 10 : 0,
+      totalWithElapsed: stopwatch.total + (stopwatch.startedAt ? 10 : 0),
     })),
   };
 
@@ -280,5 +304,57 @@ describe("operations tools", () => {
     const payload = JSON.parse(result.content[0].text) as { results: Array<{ id: string }> };
     expect(payload.results).toHaveLength(1);
     expect(payload.results[0].id).toBe("a-1");
+  });
+
+  it("stopwatch start calls startStopwatch and returns running status", async () => {
+    const ctx = makeContext();
+    const result = await stopwatchTool.handler(ctx, { card_id: "card-1", action: "start" });
+    expect(vi.mocked(ctx.client.startStopwatch!)).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(result.content[0].text) as { stopwatch: { running: boolean } };
+    expect(payload.stopwatch.running).toBe(true);
+  });
+
+  it("stopwatch stop calls stopStopwatch", async () => {
+    const ctx = makeContext();
+    vi.mocked(ctx.client.getCard).mockResolvedValueOnce({
+      ...(await ctx.client.getCard("card-1")),
+      item: {
+        ...(await ctx.client.getCard("card-1")).item,
+        stopwatch: { total: 10, startedAt: "2026-01-10T00:00:00.000Z" },
+      },
+    });
+    await stopwatchTool.handler(ctx, { card_id: "card-1", action: "stop" });
+    expect(vi.mocked(ctx.client.stopStopwatch!)).toHaveBeenCalledTimes(1);
+  });
+
+  it("stopwatch start on already-running returns error", async () => {
+    const ctx = makeContext();
+    vi.mocked(ctx.client.getCard).mockResolvedValueOnce({
+      ...(await ctx.client.getCard("card-1")),
+      item: {
+        ...(await ctx.client.getCard("card-1")).item,
+        stopwatch: { total: 10, startedAt: "2026-01-10T00:00:00.000Z" },
+      },
+    });
+    const result = await stopwatchTool.handler(ctx, { card_id: "card-1", action: "start" });
+    const payload = JSON.parse(result.content[0].text) as { error: string };
+    expect(payload.error).toContain("already running");
+  });
+
+  it("sort_list calls sortList with configured field and order", async () => {
+    const ctx = makeContext();
+    ctx.config.board.sort_rules = { inbox: { field: "dueDate", order: "asc" } };
+    const result = await sortListTool.handler(ctx, { list_name: "INBOX" });
+    expect(vi.mocked(ctx.client.sortList)).toHaveBeenCalledWith("l-inbox", "dueDate", "asc");
+    const payload = JSON.parse(result.content[0].text) as { sorted_by: string; order: string };
+    expect(payload.sorted_by).toBe("dueDate");
+    expect(payload.order).toBe("asc");
+  });
+
+  it("sort_list rejects archive and trash lists", async () => {
+    const ctx = makeContext();
+    const result = await sortListTool.handler(ctx, { list_name: "Archive" });
+    const payload = JSON.parse(result.content[0].text) as { error: string };
+    expect(payload.error).toContain("Cannot sort archive lists");
   });
 });

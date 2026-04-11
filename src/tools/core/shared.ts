@@ -45,6 +45,12 @@ export interface ToolContext {
     updateTask?: (taskId: string, data: import("../../client/types.js").UpdateTaskInput) => Promise<import("../../client/types.js").TaskResponse>;
     deleteTask?: (taskId: string) => Promise<import("../../client/types.js").TaskResponse>;
     deleteTaskList?: (taskListId: string) => Promise<import("../../client/types.js").TaskListResponse>;
+    startStopwatch?: (cardId: string, existingTotal: number) => Promise<CardResponse>;
+    stopStopwatch?: (cardId: string, existingTotal: number, startedAt: string) => Promise<CardResponse>;
+    resetStopwatch?: (cardId: string) => Promise<CardResponse>;
+    getStopwatchStatus?: (
+      stopwatch: import("../../client/types.js").StopwatchData,
+    ) => import("../../client/types.js").StopwatchStatus;
     sortList: (
       listId: string,
       fieldName: "name" | "dueDate" | "createdAt",

@@ -13,6 +13,8 @@ import { overdueCheckTool } from "./overdue-check.js";
 import { manageChecklistTool } from "./manage-checklist.js";
 import { addCommentTool } from "./add-comment.js";
 import { searchArchiveTool } from "./search-archive.js";
+import { stopwatchTool } from "./stopwatch.js";
+import { sortListTool } from "./sort-list.js";
 import type { ToolContext } from "./shared.js";
 import type { CoreToolDefinition } from "../generator.js";
 
@@ -49,6 +51,8 @@ export {
   manageChecklistTool,
   addCommentTool,
   searchArchiveTool,
+  stopwatchTool,
+  sortListTool,
 };
 
 export const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
@@ -71,6 +75,8 @@ export const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
   adaptCoreTool(manageChecklistTool),
   adaptCoreTool(addCommentTool),
   adaptCoreTool(searchArchiveTool),
+  adaptCoreTool(stopwatchTool),
+  adaptCoreTool(sortListTool),
 ];
 
 export const coreToolDefinitions = CORE_TOOL_DEFINITIONS;
