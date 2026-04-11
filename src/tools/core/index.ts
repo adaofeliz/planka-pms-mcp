@@ -15,6 +15,7 @@ import { addCommentTool } from "./add-comment.js";
 import { searchArchiveTool } from "./search-archive.js";
 import { stopwatchTool } from "./stopwatch.js";
 import { sortListTool } from "./sort-list.js";
+import { pomodoroTool } from "./pomodoro.js";
 import type { ToolContext } from "./shared.js";
 import type { CoreToolDefinition } from "../generator.js";
 
@@ -53,6 +54,7 @@ export {
   searchArchiveTool,
   stopwatchTool,
   sortListTool,
+  pomodoroTool,
 };
 
 export const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
@@ -77,6 +79,7 @@ export const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
   adaptCoreTool(searchArchiveTool),
   adaptCoreTool(stopwatchTool),
   adaptCoreTool(sortListTool),
+  adaptCoreTool(pomodoroTool),
 ];
 
 export const coreToolDefinitions = CORE_TOOL_DEFINITIONS;
