@@ -7,11 +7,13 @@ const server = new McpServer({
   version: "0.1.0",
 });
 
-server.tool(
+server.registerTool(
   "hello_world",
-  "A simple hello world tool to verify the MCP server is working",
   {
-    name: z.string().optional().describe("Name to greet"),
+    description: "A simple hello world tool to verify the MCP server is working",
+    inputSchema: {
+      name: z.string().optional().describe("Name to greet"),
+    },
   },
   async ({ name }) => ({
     content: [
