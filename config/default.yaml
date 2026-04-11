@@ -176,7 +176,7 @@ tools:
 
     - name: start_working
       description: "Move a card to ACTIVE and start the stopwatch"
-      composed_of: [move_card, stopwatch]
+      composed_of: [move_card, start_stopwatch]
       defaults:
         target_list: active
 

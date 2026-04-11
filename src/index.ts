@@ -9,7 +9,7 @@ import { createLogger } from "./utils/logger.js";
 import { PlankaClient } from "./client/planka-client.js";
 import { BoardSkeletonCache } from "./client/cache.js";
 import { CORE_TOOL_DEFINITIONS } from "./tools/core/index.js";
-import { registerCoreTools } from "./tools/generator.js";
+import { registerCoreTools, registerWorkflowTools } from "./tools/generator.js";
 
 const SERVER_NAME = "planka-pms";
 const SERVER_VERSION = "0.1.0";
@@ -40,6 +40,7 @@ function log(message: string) {
 
 function registerTools(server: McpServer) {
   registerCoreTools(server, CORE_TOOL_DEFINITIONS, config, client, cache, logger);
+  registerWorkflowTools(server, config, client, cache, logger);
 }
 
 async function startHttpServer() {
