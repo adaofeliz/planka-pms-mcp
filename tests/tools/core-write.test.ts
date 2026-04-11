@@ -3,12 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 import type { ToolContext } from "../../src/tools/core/shared.js";
 import { createCardTool } from "../../src/tools/core/create-card.js";
 import { updateCardTool } from "../../src/tools/core/update-card.js";
+import { moveCardTool } from "../../src/tools/core/move-card.js";
+import { completeCardTool } from "../../src/tools/core/complete-card.js";
 import { NameResolver } from "../../src/client/resolver.js";
 import { BoardSkeletonCache, type BoardSkeleton } from "../../src/client/cache.js";
 import { createLogger } from "../../src/utils/logger.js";
 import type { PlankaConfig } from "../../src/config/types.js";
 
-function config(): PlankaConfig {
+function config(transitions: PlankaConfig["board"]["transitions"] = {}): PlankaConfig {
   return {
     connection: { base_url: "https://planka.example.com", api_key: "k", board_id: "board-1" },
     board: {
@@ -25,7 +27,7 @@ function config(): PlankaConfig {
         done: "DONE",
       },
       wip_limits: {},
-      transitions: {},
+      transitions,
       default_capture_list: "inbox",
       sort_rules: {},
       archive: { never_delete_done: true, search_enabled: true, page_size: 50 },
@@ -64,6 +66,8 @@ function skeleton(): BoardSkeleton {
       { id: "l-inbox", createdAt: "", updatedAt: "", name: "INBOX", position: 1, color: null, type: "active", boardId: "board-1" },
       { id: "l-backlog", createdAt: "", updatedAt: "", name: "BACKLOG", position: 2, color: null, type: "active", boardId: "board-1" },
       { id: "l-done", createdAt: "", updatedAt: "", name: "DONE", position: 3, color: null, type: "closed", boardId: "board-1" },
+      { id: "l-blocked", createdAt: "", updatedAt: "", name: "BLOCKED", position: 4, color: null, type: "active", boardId: "board-1" },
+      { id: "l-archive", createdAt: "", updatedAt: "", name: "Archive", position: 5, color: null, type: "archive", boardId: "board-1" },
     ],
     labels: [{ id: "lab-work", name: "Work", color: "blue", position: 1, boardId: "board-1" }],
     cardLabels: [],
@@ -75,11 +79,11 @@ function skeleton(): BoardSkeleton {
     members: [],
     cards: [],
     doneListId: "l-done",
-    archiveListId: undefined,
+    archiveListId: "l-archive",
   };
 }
 
-function cardDetail(cardId = "card-1") {
+function cardDetail(cardId = "card-1", listId = "l-inbox") {
   return {
     item: {
       id: cardId,
@@ -96,7 +100,7 @@ function cardDetail(cardId = "card-1") {
       isClosed: false,
       listChangedAt: "2026-01-01T00:00:00.000Z",
       boardId: "board-1",
-      listId: "l-inbox",
+      listId,
       creatorUserId: "u-1",
       prevListId: null,
       coverAttachmentId: null,
@@ -118,8 +122,8 @@ function cardDetail(cardId = "card-1") {
   };
 }
 
-function makeContext(): ToolContext {
-  const cfg = config();
+function makeContext(transitions: PlankaConfig["board"]["transitions"] = {}, initialListId = "l-inbox"): ToolContext {
+  const cfg = config(transitions);
   const skel = skeleton();
   const resolver = new NameResolver(skel, cfg);
   const cache = new BoardSkeletonCache(300_000);
@@ -150,16 +154,20 @@ function makeContext(): ToolContext {
       items: [],
       included: { cardLabels: [], cardMemberships: [], taskLists: [], tasks: [], customFieldGroups: [], customFields: [], customFieldValues: [], users: [] },
     })),
-    getCard: vi.fn(async (cardId: string) => cardDetail(cardId)),
+    getCard: vi
+      .fn()
+      .mockResolvedValueOnce(cardDetail("card-1", initialListId))
+      .mockResolvedValueOnce(cardDetail("card-1", "l-backlog"))
+      .mockResolvedValue(cardDetail("card-1", "l-backlog")),
     getComments: vi.fn(async () => ({ items: [], included: { users: [] } })),
     getCardActions: vi.fn(async () => ({ items: [], included: { users: [] } })),
-    createCard: vi.fn(async () => cardDetail("card-1")),
-    updateCard: vi.fn(async () => cardDetail("card-1")),
+    createCard: vi.fn(async () => cardDetail("card-1", initialListId)),
+    updateCard: vi.fn(async () => cardDetail("card-1", initialListId)),
     addCardLabel: vi.fn(async () => {}),
     removeCardLabel: vi.fn(async () => {}),
     setCustomFieldValue: vi.fn(async () => {}),
     clearCustomFieldValue: vi.fn(async () => {}),
-    moveCard: vi.fn(async () => cardDetail("card-1")),
+    moveCard: vi.fn(async (_cardId: string, targetListId: string) => cardDetail("card-1", targetListId)),
     sortList: vi.fn(async () => ({})),
   };
 
@@ -176,9 +184,7 @@ function makeContext(): ToolContext {
 describe("core write tools", () => {
   it("create_card calls createCard with project type and name", async () => {
     const context = makeContext();
-
     await createCardTool.handler(context, { name: "New task" });
-
     expect(vi.mocked(context.client.createCard)).toHaveBeenCalledWith(
       "l-inbox",
       expect.objectContaining({ type: "project", name: "New task" }),
@@ -187,68 +193,81 @@ describe("core write tools", () => {
 
   it("create_card defaults list_name to INBOX", async () => {
     const context = makeContext();
-
     await createCardTool.handler(context, { name: "New task" });
-
     expect(vi.mocked(context.client.createCard)).toHaveBeenCalledWith("l-inbox", expect.any(Object));
   });
 
   it("create_card adds each requested label", async () => {
     const context = makeContext();
-
     await createCardTool.handler(context, { name: "New task", labels: ["Work"] });
-
     expect(vi.mocked(context.client.addCardLabel)).toHaveBeenCalledWith("card-1", "lab-work");
   });
 
   it("create_card returns shaped tier 1 result with card id", async () => {
     const context = makeContext();
-
     const result = await createCardTool.handler(context, { name: "New task" });
     const payload = JSON.parse(result.content[0].text) as { id: string };
-
     expect(payload.id).toBe("card-1");
   });
 
   it("update_card calls updateCard with name", async () => {
     const context = makeContext();
-
     await updateCardTool.handler(context, { card_id: "card-1", name: "Renamed" });
-
     expect(vi.mocked(context.client.updateCard)).toHaveBeenCalledWith("card-1", expect.objectContaining({ name: "Renamed" }));
   });
 
   it("update_card adds labels from labels_add", async () => {
     const context = makeContext();
-
     await updateCardTool.handler(context, { card_id: "card-1", labels_add: ["Work"] });
-
     expect(vi.mocked(context.client.addCardLabel)).toHaveBeenCalledWith("card-1", "lab-work");
   });
 
   it("update_card removes labels from labels_remove", async () => {
     const context = makeContext();
-
     await updateCardTool.handler(context, { card_id: "card-1", labels_remove: ["Work"] });
-
     expect(vi.mocked(context.client.removeCardLabel)).toHaveBeenCalledWith("card-1", "lab-work");
   });
 
   it("update_card clears custom field when priority is null", async () => {
     const context = makeContext();
-
     await updateCardTool.handler(context, { card_id: "card-1", priority: null });
-
     expect(vi.mocked(context.client.clearCustomFieldValue)).toHaveBeenCalledWith("card-1", "cfg-1", "cf-priority");
   });
 
   it("update_card error path returns toolError payload", async () => {
     const context = makeContext();
-    vi.mocked(context.client.getCard).mockRejectedValueOnce(new Error("boom"));
-
+    context.client.getCard = vi.fn(async () => {
+      throw new Error("boom");
+    });
     const result = await updateCardTool.handler(context, { card_id: "card-1" });
     const payload = JSON.parse(result.content[0].text) as { error: string };
-
     expect(payload.error).toContain("boom");
+  });
+
+  it("move_card calls moveCard with resolved target list ID", async () => {
+    const context = makeContext({ inbox: ["backlog"] });
+    await moveCardTool.handler(context, { card_id: "card-1", target_list: "BACKLOG" });
+    expect(vi.mocked(context.client.moveCard)).toHaveBeenCalledWith("card-1", "l-backlog", 1);
+  });
+
+  it("move_card returns informative error for invalid transition", async () => {
+    const context = makeContext({ inbox: ["today"] });
+    const result = await moveCardTool.handler(context, { card_id: "card-1", target_list: "BACKLOG" });
+    const payload = JSON.parse(result.content[0].text) as { error: string; suggestions?: string[] };
+    expect(payload.error).toContain("Cannot move card");
+    expect(payload.suggestions).toContain("TODAY");
+  });
+
+  it("complete_card calls moveCard with DONE list ID", async () => {
+    const context = makeContext();
+    await completeCardTool.handler(context, { card_id: "card-1" });
+    expect(vi.mocked(context.client.moveCard)).toHaveBeenCalledWith("card-1", "l-done");
+  });
+
+  it("complete_card returns completed_at timestamp", async () => {
+    const context = makeContext();
+    const result = await completeCardTool.handler(context, { card_id: "card-1" });
+    const payload = JSON.parse(result.content[0].text) as { completed_at: string };
+    expect(payload.completed_at).toMatch(/\d{4}-\d{2}-\d{2}T/);
   });
 });
