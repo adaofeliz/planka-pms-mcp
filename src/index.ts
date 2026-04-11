@@ -4,43 +4,39 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { createServer, type Server as HttpServer } from "node:http";
 import { randomUUID } from "node:crypto";
 
-import { loadConfig } from "./config/loader.js";
-import { createLogger } from "./utils/logger.js";
-import { PlankaClient } from "./client/planka-client.js";
-import { BoardSkeletonCache } from "./client/cache.js";
-import { CORE_TOOL_DEFINITIONS } from "./tools/core/index.js";
+import { initializeServices, resolvePort, resolveUseHttp } from "./bootstrap.js";
 import { registerCoreTools, registerWorkflowTools } from "./tools/generator.js";
+import { CORE_TOOL_DEFINITIONS } from "./tools/core/index.js";
 
 const SERVER_NAME = "planka-pms";
 const SERVER_VERSION = "0.1.0";
+const useHttp = resolveUseHttp();
+const port = resolvePort();
 
-const configPath = (() => {
-  const flag = process.argv.find((a) => a.startsWith("--config="));
-  if (flag) return flag.split("=")[1];
-  return process.env.PLANKA_CONFIG_PATH ?? "config/default.yaml";
-})();
-
-const config = loadConfig(configPath);
-const logger = createLogger(SERVER_NAME);
-const client = new PlankaClient({
-  baseUrl: config.connection.base_url,
-  apiKey: config.connection.api_key,
-  logger,
-});
-const cache = new BoardSkeletonCache(config.cache.skeleton_ttl_seconds * 1000);
-
-const args = process.argv.slice(2);
-const useHttp = args.includes("--http");
-const portFlag = args.find((a) => a.startsWith("--port="));
-const port = portFlag ? Number(portFlag.split("=")[1]) : 3000;
-
-function log(message: string) {
+function log(message: string): void {
   process.stderr.write(`[${SERVER_NAME}] ${message}\n`);
 }
 
-function registerTools(server: McpServer) {
-  registerCoreTools(server, CORE_TOOL_DEFINITIONS, config, client, cache, logger);
-  registerWorkflowTools(server, config, client, cache, logger);
+let services: Awaited<ReturnType<typeof initializeServices>>;
+
+function createAndRegisterServer(): McpServer {
+  const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
+  registerCoreTools(
+    server,
+    CORE_TOOL_DEFINITIONS,
+    services.config,
+    services.client,
+    services.cache,
+    services.logger,
+  );
+  registerWorkflowTools(
+    server,
+    services.config,
+    services.client,
+    services.cache,
+    services.logger,
+  );
+  return server;
 }
 
 async function startHttpServer() {
@@ -135,11 +131,7 @@ async function startHttpServer() {
       sessionIdGenerator: () => randomUUID(),
     });
 
-    const server = new McpServer({
-      name: SERVER_NAME,
-      version: SERVER_VERSION,
-    });
-    registerTools(server);
+    const server = createAndRegisterServer();
 
     await server.connect(transport);
     await transport.handleRequest(req, res, body);
@@ -165,11 +157,7 @@ async function startHttpServer() {
 
 async function startStdioServer() {
   log("Starting in stdio mode");
-  const server = new McpServer({
-    name: SERVER_NAME,
-    version: SERVER_VERSION,
-  });
-  registerTools(server);
+  const server = createAndRegisterServer();
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
@@ -178,11 +166,18 @@ async function startStdioServer() {
   return { server, transport };
 }
 
-async function main() {
+async function main(): Promise<void> {
+  try {
+    services = await initializeServices(SERVER_NAME);
+  } catch (error) {
+    log(`Startup initialization failed: ${error instanceof Error ? error.message : String(error)}`);
+    process.exit(1);
+  }
+
   if (useHttp) {
     const { httpServer, transports } = await startHttpServer();
 
-    const shutdown = async () => {
+    const shutdown = async (): Promise<void> => {
       log("Shutting down HTTP server...");
       for (const [id, transport] of transports) {
         await transport.close();
@@ -196,21 +191,22 @@ async function main() {
 
     process.on("SIGINT", shutdown);
     process.on("SIGTERM", shutdown);
-  } else {
-    const { server } = await startStdioServer();
-
-    const shutdown = async () => {
-      log("Shutting down stdio server...");
-      await server.close();
-      process.exit(0);
-    };
-
-    process.on("SIGINT", shutdown);
-    process.on("SIGTERM", shutdown);
+    return;
   }
+
+  const { server } = await startStdioServer();
+
+  const shutdown = async (): Promise<void> => {
+    log("Shutting down stdio server...");
+    await server.close();
+    process.exit(0);
+  };
+
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 }
 
-main().catch((err) => {
-  log(`Fatal error: ${err instanceof Error ? err.message : String(err)}`);
+main().catch((error) => {
+  log(`Fatal error: ${error instanceof Error ? error.message : String(error)}`);
   process.exit(1);
 });
