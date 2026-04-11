@@ -57,7 +57,7 @@ export const searchCardsTool = {
         .filter((list) => {
           if (!input.lists?.length) return true;
           const expected = new Set(input.lists.map((name) => name.toLowerCase()));
-          return expected.has(list.name.toLowerCase());
+          return list.name !== null && expected.has(list.name.toLowerCase());
         })
         .map((list) => list.id),
     );

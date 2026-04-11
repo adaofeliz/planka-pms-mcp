@@ -27,7 +27,8 @@ export function levenshteinDistance(a: string, b: string): number {
   return dp[rows - 1][cols - 1];
 }
 
-export function stripEmoji(s: string): string {
+export function stripEmoji(s: string | null | undefined): string {
+  if (!s) return "";
   return s.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "").trim();
 }
 

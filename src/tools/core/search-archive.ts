@@ -62,8 +62,8 @@ export const searchArchiveTool = {
             .filter((cl) => cl.cardId === card.id)
             .map((cl) => cl.labelId);
           const cardLabelNames = skeleton.labels
-            .filter((label) => cardLabelIds.includes(label.id))
-            .map((label) => label.name.toLowerCase());
+            .filter((label) => cardLabelIds.includes(label.id) && label.name !== null)
+            .map((label) => (label.name as string).toLowerCase());
           return cardLabelNames.some((name) => expected.has(name));
         });
       }

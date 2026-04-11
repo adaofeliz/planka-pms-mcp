@@ -38,7 +38,7 @@ export interface PlankaList {
 
 export interface PlankaLabel {
   id: string;
-  name: string;
+  name: string | null;
   color: string;
   position: number;
   boardId: string;

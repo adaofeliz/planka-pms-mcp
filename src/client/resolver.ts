@@ -14,7 +14,8 @@ type Matchable = {
   name: string;
 };
 
-function normalizeName(value: string): string {
+function normalizeName(value: string | null | undefined): string {
+  if (!value) return "";
   return stripEmoji(value)
     .replace(/[^\p{L}\p{N}\s]/gu, "")
     .replace(/\s+/g, " ")
@@ -58,11 +59,13 @@ export class NameResolver {
   ) {}
 
   resolveListId(name: string): string {
-    return this.resolveEntity("list", name, this.skeleton.lists).id;
+    const lists = this.skeleton.lists.filter((l): l is PlankaList & { name: string } => l.name !== null);
+    return this.resolveEntity("list", name, lists).id;
   }
 
   resolveLabelId(name: string): string {
-    return this.resolveEntity("label", name, this.skeleton.labels).id;
+    const labels = this.skeleton.labels.filter((l): l is PlankaLabel & { name: string } => l.name !== null);
+    return this.resolveEntity("label", name, labels).id;
   }
 
   resolveMemberId(name: string): string {

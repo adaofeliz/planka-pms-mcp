@@ -102,7 +102,9 @@ export function shapeCard(opts: ShapeCardOptions): CardTier1 | CardTier2 | CardT
   const listName = ctx.lists.find((l) => l.id === card.listId)?.name ?? card.listId;
 
   const labelIds = opts.cardLabels.filter((cl) => cl.cardId === card.id).map((cl) => cl.labelId);
-  const labelNames = ctx.labels.filter((l) => labelIds.includes(l.id)).map((l) => l.name);
+  const labelNames = ctx.labels
+    .filter((l) => labelIds.includes(l.id) && l.name !== null)
+    .map((l) => l.name as string);
 
   const priorityRaw = getCustomFieldValue(card.id, ctx.priorityFieldName, opts.customFieldValues, ctx.customFields);
   const durationRaw = getCustomFieldValue(card.id, ctx.durationFieldName, opts.customFieldValues, ctx.customFields);

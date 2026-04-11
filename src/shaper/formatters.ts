@@ -23,7 +23,8 @@ export function isOverdue(dueDate: string | null | undefined, isDueCompleted: bo
   return due.getTime() < now.getTime();
 }
 
-export function stripEmojiPrefix(s: string): string {
+export function stripEmojiPrefix(s: string | null | undefined): string {
+  if (!s) return "";
   return s.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/gu, "").trim();
 }
 

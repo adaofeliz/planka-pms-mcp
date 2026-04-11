@@ -84,7 +84,7 @@ export interface CardSummary {
   stopwatch_running: boolean;
 }
 
-export function getListName(listId: string, lists: { id: string; name: string }[]): string {
+export function getListName(listId: string, lists: { id: string; name: string | null }[]): string {
   return lists.find((l) => l.id === listId)?.name ?? listId;
 }
 
@@ -94,7 +94,9 @@ export function getCardLabelNames(
   labels: PlankaLabel[],
 ): string[] {
   const labelIds = cardLabels.filter((cl) => cl.cardId === cardId).map((cl) => cl.labelId);
-  return labels.filter((l) => labelIds.includes(l.id)).map((l) => l.name);
+  return labels
+    .filter((l) => labelIds.includes(l.id) && l.name !== null)
+    .map((l) => l.name as string);
 }
 
 export function getCustomFieldValue(

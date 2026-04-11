@@ -51,10 +51,10 @@ export const overdueCheckTool = {
     const todayWorkloadCount = skeleton.cards.filter((card) => card.listId === todayListId).length;
 
     const priorityField = skeleton.customFields.find(
-      (field) => field.name.toLowerCase() === context.config.custom_fields.priority.field_name.toLowerCase(),
+      (field) => field.name !== null && field.name.toLowerCase() === context.config.custom_fields.priority.field_name.toLowerCase(),
     );
     const durationField = skeleton.customFields.find(
-      (field) => field.name.toLowerCase() === context.config.custom_fields.duration.field_name.toLowerCase(),
+      (field) => field.name !== null && field.name.toLowerCase() === context.config.custom_fields.duration.field_name.toLowerCase(),
     );
 
     const enriched: OverdueCardInput[] = [];
