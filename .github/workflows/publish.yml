@@ -19,7 +19,7 @@ jobs:
           registry-url: "https://npm.pkg.github.com"
           scope: "@adaofeliz"
 
-      - run: npm ci
+      - run: npm install
 
       - run: npm test
 
