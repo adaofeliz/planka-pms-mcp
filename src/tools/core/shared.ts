@@ -174,11 +174,11 @@ export function shapeCardForTier(
 }
 
 export function shapeCardsForTier(
-  cards: Record<string, unknown>[],
+  cards: unknown[],
   tiers: PlankaConfig["response"],
   level: "summary" | "detail" | "deep",
 ): Array<Record<string, unknown>> {
-  return cards.map((card) => shapeCardForTier(card, tiers, level));
+  return cards.map((card) => shapeCardForTier(card as Record<string, unknown>, tiers, level));
 }
 
 export function toolResult(data: unknown): { content: Array<{ type: "text"; text: string }> } {
