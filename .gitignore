@@ -39,3 +39,7 @@ build/
 
 # --- Local config overrides ---
 *.local.json
+
+# --- OhMyOpenCode / Sisyphus ---
+.sisyphus/*
+!.sisyphus/rules/
