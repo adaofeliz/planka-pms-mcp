@@ -1,8 +1,0 @@
-name: PASS
-type: PASS
-bin: PASS
-publishConfig.access: PASS
-package-lock: PASS
-node_modules: PASS
-tsconfig: PASS
-tsup: PASS
