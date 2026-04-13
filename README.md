@@ -52,11 +52,7 @@ Add to your MCP client config (Claude Desktop, Cursor, MCPHub, etc.):
   "mcpServers": {
     "planka-pms-mcp": {
       "command": "npx",
-      "args": [
-        "-y",
-        "--registry=https://npm.pkg.github.com",
-        "@adaofeliz/planka-pms-mcp"
-      ],
+      "args": ["-y", "@adflz/planka-pms-mcp@0.1.7"],
       "env": {
         "PLANKA_BASE_URL": "https://your-planka-instance.com",
         "PLANKA_API_KEY": "your-api-key",
@@ -65,12 +61,6 @@ Add to your MCP client config (Claude Desktop, Cursor, MCPHub, etc.):
     }
   }
 }
-```
-
-If you have `@adaofeliz:registry=https://npm.pkg.github.com` in your `~/.npmrc`, you can omit the `--registry` arg:
-
-```json
-"args": ["-y", "@adaofeliz/planka-pms-mcp"]
 ```
 
 ### stdio mode (default)
