@@ -214,6 +214,31 @@ describe("core write tools", () => {
     expect(payload.id).toBe("card-1");
   });
 
+  it("create_card sends position 65535 for an empty list", async () => {
+    const context = makeContext();
+    await createCardTool.handler(context, { name: "New task" });
+    expect(vi.mocked(context.client.createCard)).toHaveBeenCalledWith(
+      "l-inbox",
+      expect.objectContaining({ position: 65535 }),
+    );
+  });
+
+  it("create_card sends position = max existing + 65535 for non-empty list", async () => {
+    const context = makeContext();
+    vi.mocked(context.client.getCardsByList).mockResolvedValueOnce({
+      items: [
+        { ...cardDetail("card-x").item, position: 65535 },
+        { ...cardDetail("card-y").item, position: 131070 },
+      ],
+      included: { cardLabels: [], cardMemberships: [], taskLists: [], tasks: [], customFieldGroups: [], customFields: [], customFieldValues: [], users: [] },
+    });
+    await createCardTool.handler(context, { name: "Third card" });
+    expect(vi.mocked(context.client.createCard)).toHaveBeenCalledWith(
+      "l-inbox",
+      expect.objectContaining({ position: 131070 + 65535 }),
+    );
+  });
+
   it("update_card calls updateCard with name", async () => {
     const context = makeContext();
     await updateCardTool.handler(context, { card_id: "card-1", name: "Renamed" });

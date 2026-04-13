@@ -40,9 +40,17 @@ export const createCardTool = {
       const targetListName = input.list_name ?? ctx.config.board.lists.inbox;
       const targetListId = ctx.resolver.resolveListId(targetListName);
 
+      const existingCards = await ctx.client.getCardsByList(targetListId);
+      const maxPosition = existingCards.items.reduce(
+        (max, card) => Math.max(max, card.position),
+        0,
+      );
+      const position = maxPosition + 65535;
+
       const response = await ctx.client.createCard(targetListId, {
         type: "project",
         name: input.name,
+        position,
         description: input.description ?? null,
         dueDate: input.due_date ?? null,
       });
