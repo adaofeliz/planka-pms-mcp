@@ -242,8 +242,8 @@ export interface CreateCardInput {
   type: "project";
   name: string;
   position?: number;
-  description?: string | null;
-  dueDate?: string | null;
+  description?: string;
+  dueDate?: string;
   isDueCompleted?: boolean;
   stopwatch?: StopwatchData;
 }

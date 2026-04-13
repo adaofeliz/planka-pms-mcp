@@ -157,6 +157,17 @@ describe("PlankaClient", () => {
     });
   });
 
+  it("includes problems array from Planka 400 validation errors in message", async () => {
+    const mockFetch = makeFetchMock(400, {
+      code: "E_MISSING_OR_INVALID_PARAMS",
+      problems: ['Invalid "dueDate": Cannot use `null`.'],
+      message: "The server could not fulfill this request due to 1 missing or invalid parameter.",
+    });
+    const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: mockFetch });
+
+    await expect(client.getBoard("b1")).rejects.toThrow('Invalid "dueDate"');
+  });
+
   it("maps 401 response to ApiError with statusCode", async () => {
     const mockFetch = makeFetchMock(401, { message: "Unauthorized" });
     const client = new PlankaClient({ baseUrl: "https://planka.test", apiKey: "key", fetch: mockFetch });

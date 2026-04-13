@@ -47,13 +47,15 @@ export const createCardTool = {
       );
       const position = maxPosition + 65535;
 
-      const response = await ctx.client.createCard(targetListId, {
+      const createPayload: Parameters<typeof ctx.client.createCard>[1] = {
         type: "project",
         name: input.name,
         position,
-        description: input.description ?? null,
-        dueDate: input.due_date ?? null,
-      });
+      };
+      if (input.description !== undefined) createPayload.description = input.description;
+      if (input.due_date !== undefined) createPayload.dueDate = input.due_date;
+
+      const response = await ctx.client.createCard(targetListId, createPayload);
       const card = response.item;
 
       if (input.labels?.length) {

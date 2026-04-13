@@ -223,6 +223,23 @@ describe("core write tools", () => {
     );
   });
 
+  it("create_card omits description and dueDate when not provided", async () => {
+    const context = makeContext();
+    await createCardTool.handler(context, { name: "New task" });
+    const payload = vi.mocked(context.client.createCard).mock.calls[0][1];
+    expect(payload).not.toHaveProperty("description");
+    expect(payload).not.toHaveProperty("dueDate");
+  });
+
+  it("create_card includes description and dueDate only when provided", async () => {
+    const context = makeContext();
+    await createCardTool.handler(context, { name: "New task", description: "Some desc", due_date: "2026-12-01" });
+    expect(vi.mocked(context.client.createCard)).toHaveBeenCalledWith(
+      "l-inbox",
+      expect.objectContaining({ description: "Some desc", dueDate: "2026-12-01" }),
+    );
+  });
+
   it("create_card sends position = max existing + 65535 for non-empty list", async () => {
     const context = makeContext();
     vi.mocked(context.client.getCardsByList).mockResolvedValueOnce({

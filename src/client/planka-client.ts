@@ -117,12 +117,30 @@ export class PlankaClient {
 
     if (!response.ok) {
       let errorMessage: string;
+      let problems: string[] | undefined;
       try {
-        const errorBody = (await response.json()) as { message?: string; error?: string };
+        const errorBody = (await response.json()) as {
+          message?: string;
+          error?: string;
+          problems?: string[];
+          code?: string;
+        };
         errorMessage = errorBody.message ?? errorBody.error ?? response.statusText;
+        problems = errorBody.problems;
       } catch {
         errorMessage = response.statusText;
       }
+
+      if (problems?.length) {
+        errorMessage += ` Problems: ${problems.join("; ")}`;
+      }
+
+      this.logger?.error(`${method} ${path} failed (${response.status})`, {
+        status: response.status,
+        problems,
+        body: options?.body,
+      });
+
       throw new ApiError(`Planka API error: ${response.status} ${errorMessage}`, response.status);
     }
 
