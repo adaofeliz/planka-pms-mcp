@@ -52,7 +52,7 @@ Add to your MCP client config (Claude Desktop, Cursor, MCPHub, etc.):
   "mcpServers": {
     "planka-pms-mcp": {
       "command": "npx",
-      "args": ["-y", "@adflz/planka-pms-mcp@0.1.7"],
+      "args": ["-y", "@adflz/planka-pms-mcp@0.1.8"],
       "env": {
         "PLANKA_BASE_URL": "https://your-planka-instance.com",
         "PLANKA_API_KEY": "your-api-key",
